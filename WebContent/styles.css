@@ -1,0 +1,111 @@
+body {
+    margin: 0 auto;
+    max-width: 95%
+    
+}
+
+#orange_line {
+    width: 100%;
+    height: 5px;
+    background-color: orange;
+    margin-bottom: 5px;
+    
+}
+
+#headarea {
+    border: 2px solid blue;
+    width: 98.9%;
+    height: 50px;
+    padding: 0px;
+    margin-bottom: 5px;
+    
+}
+
+#main {
+    max-width: 100%;
+    margin: 0 auto;
+
+    
+}
+
+#mainarea {
+    display: inline-flex;
+    flex-wrap: wrap;
+    position: relative;
+    border: 2px solid green;
+    padding: 20px; 
+    width: 60%;
+    height: 470px;
+    float: left;
+    background-color: lightgray;
+    border-radius: 10px;
+    
+}
+
+#catalogarea {
+    border: 2px solid green;
+    padding: 20px; 
+    width: 30%;
+    height: 200px;
+    float: right;
+    
+}
+
+#highscorearea {
+    border: 2px solid green;
+    padding: 20px;
+    width: 30%;
+    height: 220px;
+    float: right;
+    margin-top: 5px;
+    
+}
+
+#footarea {
+    border: 2px solid black;
+    width: 98.9%;
+    padding: 5px;
+    height: 50px;
+    margin-top: 5px;
+    float: left;
+    
+}
+
+#webquiz {
+    margin-top: auto;
+    
+}
+
+#login_form {
+    margin-top: 150px;
+    margin-left: 200px;
+    align-content: center;
+    
+}
+
+.catas {
+    background-color: lightgray;
+    width:200px;
+    height: 30px;
+    margin-bottom: 10px;
+    text-align: center;
+    border-radius: 5px;
+    padding-top: 10px;
+    
+    
+}
+
+h5 {
+    margin-bottom: 2px;
+    
+}
+
+#marquee
+{
+    width: 100%;
+    background-color: white;
+    border:none;
+    font-size: 40px;
+    color: black;
+}
+

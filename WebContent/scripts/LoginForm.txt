@@ -1,0 +1,5 @@
+<form  id="login_form" method="get" action="index.html">
+                    <p>Username</p>   
+                    <p><input type="text" id="usrname_txt" name="usrname" value="Insert Playername"></p>
+                    <input type="submit" id="button_login" name="login" value="Login">
+</form>
