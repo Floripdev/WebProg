@@ -3,6 +3,7 @@ var begin = 0;
 var end = text.length;
 var playerCnt = 0;
 var startButton = false;
+var catChangeCnt = 0;
 
 
 window.addEventListener("load", lauftext);
@@ -86,8 +87,16 @@ function catalogSelected(elem){
     }
    elem.target.style.backgroundColor ='darkturquoise';
     elem.target.style.color = 'white';
-    console.log(elem);
-    sendCatalogChange(elem.target.innerText);
+    //TODO: überarbeiten weil sonst dauerschleife --> evtl in der Echo Java über isAdmin funktion
+    if(catChangeCnt === 0){
+    	sendCatalogChange(elem.target.innerText);
+    	catChangeCnt++;
+    	
+    }else{
+    	catChangeCnt--;
+    	
+    }
+    
     
 }
 

@@ -2,6 +2,7 @@ package websockets;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.TimerTask;
 
 import javax.websocket.CloseReason;
 import javax.websocket.EndpointConfig;
@@ -47,6 +48,7 @@ public class Echo{
 	private QuizError error = new QuizError();
 	private Player player;
 	private FilesystemLoader loader = new FilesystemLoader("catalogs");
+	private Question question;
 	
 	
 	@OnError
@@ -111,7 +113,7 @@ public class Echo{
 					quiz.changeCatalog(player, msgJSON.get("catalog").toString(), error);
 					String currentCatalog = quiz.getCurrentCatalog().toString();
 					
-					//An alle broadcasten					
+					//TODO: An alle broadcasten					
 					break;
 					
 				case  RECV_GAMESTARTED_TYPE:
@@ -120,7 +122,16 @@ public class Echo{
 					break;
 					
 				case RECV_QUESTIONREQUEST_TYPE:
-					
+					//TODO: TimerTask verwendung?
+					TimerTask timeoutTask = new TimerTask() {
+						
+						@Override
+						public void run() {
+							// TODO Auto-generated method stub
+							
+						}
+					};
+					question = quiz.requestQuestion(player, timeoutTask, error);
 					break;
 					
 				case RECV_QUESTIONANSWERED_TYPE:
