@@ -19,6 +19,7 @@ import org.json.simple.parser.ParseException;
 
 import de.fhwgt.quiz.application.*;
 import de.fhwgt.quiz.error.*;
+import de.fhwgt.quiz.loader.FilesystemLoader;
 
 
 
@@ -43,57 +44,60 @@ public class Echo{
 	
 	//Var declarations global in Function
 	private Quiz quiz = Quiz.getInstance();
-	private QuizError reason = new QuizError();
+	private QuizError error = new QuizError();
+	private Player player;
+	private FilesystemLoader loader = new FilesystemLoader("catalogs");
 	
 	
 	@OnError
 	public void error(Session session, Throwable t) {
-		System.out.println("Fehler beim öffnen des WebSockets: " + t);
+		System.out.println("Error Opening WebSocket: " + t);
 		
 	}
 	
 	@OnOpen
 	public void open(Session session, EndpointConfig conf){
 		ConnectionManager.addSession(session);
-		System.out.println("Open Socket with SessionID=" + session.getId());
+		System.out.println("Open Session with SessionID=" + session.getId());
 		
 	}
 	
 	@OnClose
 	public void close(Session session, CloseReason reason) {
-		System.out.println("Session mit der SessionID: " + session.getId() + " gelöscht");
+		System.out.println("Closing Session with SessionID: " + session.getId());
 		ConnectionManager.SessionRemove(session);
 		
 	}
 	
 	@OnMessage
 	public void echoTextMessage(Session session, String msg, boolean last) throws ParseException{
-		System.out.println("MSG vom Client mit der SessionID. " + session.getId() + " erhalten mit dem Inhalt: " + msg);
+		System.out.println("MSG recieved from Client with SessionID:  " + session.getId() + " Message Data: " + msg);
 		JSONObject msgJSON = (JSONObject) new JSONParser().parse(msg);
 		int msgType = Integer.parseInt(msgJSON.get("type").toString());
 		
 		if(session.isOpen()) {
 			switch(msgType) {
 				case RECV_LOGINREQUEST_TYPE:
-					System.out.println("LoginRequest erhalten msgType: " + msgType);
+					System.out.println("LoginRequest recived from Client with SessionID:" + session.getId());
 					String name = msgJSON.get("name").toString();
 						
 					if(name != null && name.length() > 0) {
-						Player player = quiz.createPlayer(name, reason);
+						player = quiz.createPlayer(name, error);
 								
 						if(player == null) {
-							if(reason.getType() == QuizErrorType.TOO_MANY_PLAYERS){
+							if(error.getType() == QuizErrorType.TOO_MANY_PLAYERS){
 								String errorMsg = new String("Es sind bereits 4 Spieler angemeldet!");
 								sendError(session, MAX_PLAYER_ERROR, errorMsg, errorMsg.length());
 									
 							}
-							if(reason.getType() == QuizErrorType.USERNAME_TAKEN) {
+							if(error.getType() == QuizErrorType.USERNAME_TAKEN) {
 								String errorMsg = new String("Spielername bereits vergeben!");
 								sendError(session, PLAYERNAME_ALREADY_EXISTS, errorMsg, errorMsg.length());
 									
 							}
 									
 						}
+						quiz.initCatalogLoader(loader);
 						
 					}else {
 						String errorMsg = new String("Keinen Spielername angegeben");
@@ -103,11 +107,16 @@ public class Echo{
 					break;
 					
 				case RECV_CATALOGCHANGE_TYPE:
+					System.out.println("CatalogChange recieved from Client with SessionId: " + session.getId());
+					quiz.changeCatalog(player, msgJSON.get("catalog").toString(), error);
+					String currentCatalog = quiz.getCurrentCatalog().toString();
 					
+					//An alle broadcasten					
 					break;
 					
 				case  RECV_GAMESTARTED_TYPE:
-					
+					//Admin überprüfung?
+					quiz.startGame(player, error);
 					break;
 					
 				case RECV_QUESTIONREQUEST_TYPE:
@@ -119,7 +128,7 @@ public class Echo{
 					break;
 					
 				case ERRORMSG_TYPE:
-					
+					System.out.println("Error from Client with SessionID: " + session.getId() + " print Message: " + msg);
 					break;
 					
 				default: 
@@ -136,9 +145,9 @@ public class Echo{
 		
 
 	
-	//Baut die Errors zusammen
+	//Baut die Errors zusammen und sendet sie ab
 	public void sendError(Session session, int subtype, String message, int length) {
-		System.out.println("Error wird erstellt und an Client vesendet...");
+		System.out.println("Creating Error JSONObject");
 		JSONObject error = new JSONObject();
 		error.put("type", ERRORMSG_TYPE);
 		error.put("subtype", subtype);

@@ -43,7 +43,7 @@ function createCat(catName, count){
 	myDiv.setAttribute("class", "catas");
 	
 	//Einfügen der Div Box
-	myDiv.appendChild(document.createTextNode(catName))
+	myDiv.appendChild(document.createTextNode(catName));
 	ausgabe.appendChild(myDiv);
 
 }

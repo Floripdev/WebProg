@@ -86,6 +86,8 @@ function catalogSelected(elem){
     }
    elem.target.style.backgroundColor ='darkturquoise';
     elem.target.style.color = 'white';
+    console.log(elem);
+    sendCatalogChange(elem.target.innerText);
     
 }
 
