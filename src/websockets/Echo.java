@@ -18,6 +18,8 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
+import com.sun.xml.internal.bind.v2.schemagen.xmlschema.ContentModelContainer;
+
 import de.fhwgt.quiz.application.*;
 import de.fhwgt.quiz.error.*;
 import de.fhwgt.quiz.loader.FilesystemLoader;
@@ -34,21 +36,21 @@ public class Echo{
 	private static final int RECV_GAMESTARTED_TYPE = 7;
 	private static final int RECV_QUESTIONREQUEST_TYPE = 8;
 	private static final int RECV_QUESTIONANSWERED_TYPE = 10;
+	private static final int SEND_QUESTION_REQUEST = 2;
+	private static final int SEND_STARTGAME = 3;
 	private static final int ERRORMSG_TYPE = 255;
 	
 	//DEFINES ERROR-SUBTYPES
 	private static final int MAX_PLAYER_ERROR = 0;
 	private static final int PLAYERNAME_ALREADY_EXISTS = 1;
 	private static final int EMPTY_PLAYERNAME = 2;
+	private static final int GAMESTART_ERROR = 3;
 	private static final int UNKNOWN_TYPE = 255;
 	
 	
 	//Var declarations global in Function
 	private Quiz quiz = Quiz.getInstance();
 	private QuizError error = new QuizError();
-	private Player player;
-	private FilesystemLoader loader = new FilesystemLoader("catalogs");
-	private Question question;
 	
 	
 	@OnError
@@ -59,7 +61,7 @@ public class Echo{
 	
 	@OnOpen
 	public void open(Session session, EndpointConfig conf){
-		ConnectionManager.addSession(session);
+		ConnectionManager.addPreSession(session);
 		System.out.println("Open Session with SessionID=" + session.getId());
 		
 	}
@@ -84,41 +86,59 @@ public class Echo{
 					String name = msgJSON.get("name").toString();
 						
 					if(name != null && name.length() > 0) {
-						player = quiz.createPlayer(name, error);
+						Player player = quiz.createPlayer(name, error);
 								
 						if(player == null) {
 							if(error.getType() == QuizErrorType.TOO_MANY_PLAYERS){
-								String errorMsg = new String("Es sind bereits 4 Spieler angemeldet!");
-								sendError(session, MAX_PLAYER_ERROR, errorMsg, errorMsg.length());
+								sendError(session, MAX_PLAYER_ERROR, error.getDescription(), error.getDescription().length());
+								break;
 									
 							}
 							if(error.getType() == QuizErrorType.USERNAME_TAKEN) {
-								String errorMsg = new String("Spielername bereits vergeben!");
-								sendError(session, PLAYERNAME_ALREADY_EXISTS, errorMsg, errorMsg.length());
-									
+								sendError(session, PLAYERNAME_ALREADY_EXISTS, error.getDescription(), error.getDescription().length());
+								break;
+								
 							}
+							ConnectionManager.addSession(session, player);
+							ConnectionManager.SessionRemove(session);
 									
 						}
-						quiz.initCatalogLoader(loader);
+						if(!broadcastThread.isAlive()) {
+							bcThread = new broadcastThread();
+							bcThread.start();
+							
+						}
 						
 					}else {
-						String errorMsg = new String("Keinen Spielername angegeben");
-						sendError(session, EMPTY_PLAYERNAME, errorMsg, errorMsg.length());
+						sendError(session, EMPTY_PLAYERNAME, error.getDescription(), error.getDescription().length());
+						break;
 						
 					}
 					break;
 					
 				case RECV_CATALOGCHANGE_TYPE:
 					System.out.println("CatalogChange recieved from Client with SessionId: " + session.getId());
-					quiz.changeCatalog(player, msgJSON.get("catalog").toString(), error);
-					String currentCatalog = quiz.getCurrentCatalog().toString();
-					
-					//TODO: An alle broadcasten					
+					quiz.changeCatalog(ConnectionManager.getPlayer(session), msgJSON.get("catalog").toString(), error);
+					JSONObject  katalogChangeJSON = new JSONObject();
+					katalogChangeJSON.put("type", SEND_QUESTION_REQUEST);
+					katalogChangeJSON.put("data", quiz.getCurrentCatalog().toString());
+					broadcast(katalogChangeJSON);				
 					break;
 					
 				case  RECV_GAMESTARTED_TYPE:
-					//Admin überprüfung?
-					quiz.startGame(player, error);
+					System.out.println("StartGame Recived from Client with SessionID: " + session.getId());
+					if(quiz.startGame(ConnectionManager.getPlayer(session), error)) {
+						System.out.println("Game started!");
+						JSONObject gameStartJSON = new JSONObject();
+						gameStartJSON.put("type", SEND_STARTGAME);
+						gameStartJSON.put("length", "0");
+						gameStartJSON.put("data", "GAME STARTED");
+						broadcast(gameStartJSON);
+						
+					}else {
+						sendError(session, GAMESTART_ERROR, error.getDescription(), error.getDescription().length());
+						
+					}
 					break;
 					
 				case RECV_QUESTIONREQUEST_TYPE:
@@ -158,7 +178,7 @@ public class Echo{
 	
 	//Baut die Errors zusammen und sendet sie ab
 	public void sendError(Session session, int subtype, String message, int length) {
-		System.out.println("Creating Error JSONObject");
+		System.out.println("Creating ErrorMSG: " + message);
 		JSONObject error = new JSONObject();
 		error.put("type", ERRORMSG_TYPE);
 		error.put("subtype", subtype);
@@ -169,7 +189,6 @@ public class Echo{
 	}
 	
 	//Sendet JSONObject an den Client
-	
 	public void sendJSON(Session session, JSONObject obj) {
 		System.out.println("Sending JSONObject to Client...");
 		try {
