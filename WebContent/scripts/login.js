@@ -36,9 +36,32 @@ function closingSocket(event){
 }
 
 //Funktion zum Empfangen von Daten
-function recive(){
-	
-	
+function receive()
+{
+	var msgServer = JSON.parse(message.data);
+	if(parseInt(msgServer.Type) == 2)
+		{
+			msgServer.clientid;
+			console.log("ID: " + clientid);
+			if(clientid == 0)
+			{
+				window.document.getElementById("start_button").disabled = false;
+				document.getElementById("start_button").addEventListener("click", startGame,false);
+				var loginButton = document.getElementById("Login_Button");
+				loginButton.parentNode.removeChild(loginButton);
+				loginButton = document.getElementById("usrname_txt")
+				loginButton.parentNode.removeChild(loginButton);
+			}
+			
+			if(clientid != 0)
+			{
+				var input = document.getElementById("input");
+				input.parentNode.removeChild(input);
+
+			
+
+			}
+}
 }
 
 function login(){
