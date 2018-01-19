@@ -1,5 +1,3 @@
-var webssocket;
-
 function sendLoginRequest(socket){
 	var playerName = document.getElementById('usrname_txt').value;
 	console.log("Sending Login with Name: " + playerName + " length: " + playerName.length + " / rfc.js");
@@ -20,5 +18,15 @@ function sendQuestionRequest(socket){
 			
 	}
 	socket.send(JSON.stringify(msg));
+	
+}
+
+function sendCatalogChange(catalogName){
+    var msg = {
+    		"type":"5",
+    		"catalogName":catalogName
+    		
+    }
+    socket.send(JSON.stringify(msg));
 	
 }
