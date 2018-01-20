@@ -60,5 +60,25 @@ public class ConnectionManager
     	
     }
     
+    public static synchronized boolean preSessionRemove(Session session){
+    	if(mapPreSession.remove(session)){
+    		return true;
+    		
+    	}else{
+    		return false;
+    		
+    	}
+    	
+    }
+    
+    public static synchronized List<Session> getPreSessions(){
+    	return mapPreSession;
+    	
+    }
+    
+    public static synchronized int getSessionCount() { 
+        return mapSessionPlayer.size();
+    }
+    
  
 }

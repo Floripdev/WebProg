@@ -1,7 +1,12 @@
 package websockets;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
 import java.util.TimerTask;
 
 import javax.websocket.CloseReason;
@@ -17,8 +22,6 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
-
-import com.sun.xml.internal.bind.v2.schemagen.xmlschema.ContentModelContainer;
 
 import de.fhwgt.quiz.application.*;
 import de.fhwgt.quiz.error.*;
@@ -38,6 +41,7 @@ public class Echo{
 	private static final int RECV_QUESTIONANSWERED_TYPE = 10;
 	private static final int SEND_QUESTION_REQUEST = 2;
 	private static final int SEND_STARTGAME = 3;
+	private static final int SEND_PLAYERLIST = 6;
 	private static final int ERRORMSG_TYPE = 255;
 	
 	//DEFINES ERROR-SUBTYPES
@@ -51,6 +55,7 @@ public class Echo{
 	//Var declarations global in Function
 	private Quiz quiz = Quiz.getInstance();
 	private QuizError error = new QuizError();
+	private Thread bcThread = new broadcastThread();
 	
 	
 	@OnError
@@ -103,7 +108,7 @@ public class Echo{
 							ConnectionManager.SessionRemove(session);
 									
 						}
-						if(!broadcastThread.isAlive()) {
+						if(!bcThread.isAlive()) {
 							bcThread = new broadcastThread();
 							bcThread.start();
 							
@@ -151,7 +156,7 @@ public class Echo{
 							
 						}
 					};
-					question = quiz.requestQuestion(player, timeoutTask, error);
+					//TODO: question = quiz.requestQuestion(player, timeoutTask, error);
 					break;
 					
 				case RECV_QUESTIONANSWERED_TYPE:
@@ -189,7 +194,7 @@ public class Echo{
 	}
 	
 	//Sendet JSONObject an den Client
-	public void sendJSON(Session session, JSONObject obj) {
+	public static synchronized void sendJSON(Session session, JSONObject obj) {
 		System.out.println("Sending JSONObject to Client...");
 		try {
 			//Daten an Server schicken
@@ -199,6 +204,82 @@ public class Echo{
 			e.printStackTrace();
 		}
 		
+	}
+	
+	private static void broadcast(JSONObject objJSON){
+		Set<Session> sessionMap = ConnectionManager.getSessions();
+		for(Iterator<Session> iter = sessionMap.iterator(); iter.hasNext();){
+			Session ses = iter.next();
+			sendJSON(ses, objJSON);
+			
+		}
+		
+		List<Session> sessionList = ConnectionManager.getPreSessions();
+		if(sessionList.size() > 0){
+			for(Session s : sessionList){
+				sendJSON(s, objJSON);
+				
+			}
+			
+		}
+	}
+	
+	class broadcastThread extends Thread{
+		private Echo playerEndpoint;
+		
+		broadcastThread(){}
+		
+		@SuppressWarnings("unchecked")
+		public void run(){
+			System.out.println("~ BroadcastThread ~");
+			System.out.println("~ SessionCount: " + ConnectionManager.getSessionCount());
+			if(ConnectionManager.getSessionCount() > 0){
+				JSONObject playerList = new JSONObject();
+				playerList.put("type", SEND_PLAYERLIST);
+				playerList.put("length", ConnectionManager.getSessionCount() * 37);
+				Collection<Player> playerCollection = ConnectionManager.getPlayers();
+				JSONArray players = new JSONArray();
+				String spieler[][] = new String[playerCollection.size()][3];
+				int countPlayer = 0;
+				for(Player p : playerCollection){
+					spieler[countPlayer][0] = p.getName();
+					spieler[countPlayer][1] = "" + p.getScore();
+					spieler[countPlayer][2] = "" +p.getId();
+					countPlayer++;
+					
+				}
+				
+				Arrays.sort(spieler, new Comparator<String[]>(){
+					@Override
+					public int compare(final String[] entry1, final String[] entry2){
+						final String time1 = entry1[1];
+						int t1 = Integer.parseInt(time1);
+						final String time2 = entry2[1];
+						int t2 = Integer.parseInt(time2);
+						
+						return Integer.compare(t1, t2);
+						
+					}			
+					
+				});
+				
+				for(int i = 0; i < spieler.length; i++){
+					JSONObject obj = new JSONObject();
+					obj.put("name", spieler[i][0]);
+					obj.put("score", spieler[i][1]);
+					obj.put("id", spieler[i][2]);
+					players.add(obj);
+					
+				}
+				
+				playerList.put("players", players);
+				
+				//GameOver Nachricht an alle Clients
+				
+			}
+			
+			
+		}
 		
 	}
 	
