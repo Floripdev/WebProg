@@ -26,6 +26,7 @@ import org.json.simple.parser.ParseException;
 import de.fhwgt.quiz.application.*;
 import de.fhwgt.quiz.error.*;
 import de.fhwgt.quiz.loader.FilesystemLoader;
+import thread.TimerThread;
 
 
 
@@ -74,6 +75,7 @@ public class Echo{
 	@OnClose
 	public void close(Session session, CloseReason reason) {
 		System.out.println("Closing Session with SessionID: " + session.getId());
+		ConnectionManager.preSessionRemove(session);
 		ConnectionManager.SessionRemove(session);
 		
 	}
@@ -105,7 +107,7 @@ public class Echo{
 								
 							}
 							ConnectionManager.addSession(session, player);
-							ConnectionManager.SessionRemove(session);
+							ConnectionManager.preSessionRemove(session);
 									
 						}
 						if(!bcThread.isAlive()) {
@@ -148,14 +150,8 @@ public class Echo{
 					
 				case RECV_QUESTIONREQUEST_TYPE:
 					//TODO: TimerTask verwendung?
-					TimerTask timeoutTask = new TimerTask() {
-						
-						@Override
-						public void run() {
-							// TODO Auto-generated method stub
-							
-						}
-					};
+					TimerTask timeoutTask = new TimerThread(session);
+					
 					//TODO: question = quiz.requestQuestion(player, timeoutTask, error);
 					break;
 					
