@@ -1,5 +1,6 @@
 package thread;
 
+import java.io.IOException;
 import java.util.TimerTask;
 
 import javax.websocket.Session;
@@ -11,9 +12,10 @@ import de.fhwgt.quiz.error.QuizError;
 import websockets.ConnectionManager;
 
 
-private static final int QUESTIN_ERROR = 4;
 
 public class TimerThread extends TimerTask {
+	private static final int SEND_TIMEOUT_TYPE = 11;
+	private static final int QUESTION_ERROR = 4;
 	
 	Session session;
 	
@@ -31,7 +33,28 @@ public class TimerThread extends TimerTask {
 		if(quiz.answerQuestion(ConnectionManager.getPlayer(session), 4, quizError) == -1) {
 			JSONObject error = new JSONObject();
 			error.put("type", 255);
-			error.put("subtype", arg1)
+			error.put("subtype", QUESTION_ERROR);
+			error.put("data", quizError.getDescription());
+			
+			try {
+				session.getBasicRemote().sendText(error.toJSONString());
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
+		}else {
+			JSONObject timeout = new JSONObject();
+			timeout.put("type", SEND_TIMEOUT_TYPE);
+			timeout.put("timeout", "1");
+			timeout.put("correct", "-1");
+			
+			try {
+				session.getBasicRemote().sendText(timeout.toJSONString());
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 			
 		}
 		
