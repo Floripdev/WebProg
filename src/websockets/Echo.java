@@ -40,9 +40,13 @@ public class Echo{
 	private static final int RECV_GAMESTARTED_TYPE = 7;
 	private static final int RECV_QUESTIONREQUEST_TYPE = 8;
 	private static final int RECV_QUESTIONANSWERED_TYPE = 10;
-	private static final int SEND_QUESTION_REQUEST = 2;
+	private static final int SEND_LOGINREQUEST_TYPE = 1;
+	private static final int SEND_CATALOGREQUEST_TYPE = 2;
 	private static final int SEND_STARTGAME = 3;
 	private static final int SEND_PLAYERLIST = 6;
+	private static final int SEND_QUESTIONREQUEST_TYPE = 9;
+	private static final int SEND_QUESTIONEMPTY_TYPE = 90;
+	private static final int SEND_ISSUPERUSER_TYPE = 20;
 	private static final int ERRORMSG_TYPE = 255;
 	
 	//DEFINES ERROR-SUBTYPES
@@ -80,6 +84,7 @@ public class Echo{
 		
 	}
 	
+	@SuppressWarnings({ "unchecked", "null" })
 	@OnMessage
 	public void echoTextMessage(Session session, String msg, boolean last) throws ParseException{
 		System.out.println("MSG recieved from Client with SessionID:  " + session.getId() + " Message Data: " + msg);
@@ -108,6 +113,17 @@ public class Echo{
 							}
 							ConnectionManager.addSession(session, player);
 							ConnectionManager.preSessionRemove(session);
+							if(player.isSuperuser()) {
+								JSONObject superUser = new JSONObject();
+								superUser.put("type", SEND_ISSUPERUSER_TYPE);
+								
+								sendJSON(session, superUser);
+								
+							}
+							JSONObject logRequest = new JSONObject();
+							logRequest.put("type", SEND_LOGINREQUEST_TYPE);
+							
+							sendJSON(session, logRequest);
 									
 						}
 						if(!bcThread.isAlive()) {
@@ -127,7 +143,7 @@ public class Echo{
 					System.out.println("CatalogChange recieved from Client with SessionId: " + session.getId());
 					quiz.changeCatalog(ConnectionManager.getPlayer(session), msgJSON.get("catalog").toString(), error);
 					JSONObject  katalogChangeJSON = new JSONObject();
-					katalogChangeJSON.put("type", SEND_QUESTION_REQUEST);
+					katalogChangeJSON.put("type", SEND_CATALOGREQUEST_TYPE);
 					katalogChangeJSON.put("data", quiz.getCurrentCatalog().toString());
 					broadcast(katalogChangeJSON);				
 					break;
@@ -149,10 +165,30 @@ public class Echo{
 					break;
 					
 				case RECV_QUESTIONREQUEST_TYPE:
-					//TODO: TimerTask verwendung?
 					TimerTask timeoutTask = new TimerThread(session);
+					JSONObject questionJSON =new JSONObject();
+					JSONArray answer = new JSONArray();
+					Question currentQuestion = quiz.requestQuestion(ConnectionManager.getPlayer(session), timeoutTask, error);
+					if(currentQuestion != null) {
+						questionJSON.put("type", SEND_QUESTIONREQUEST_TYPE);
+						questionJSON.put("question", currentQuestion.getQuestion());
+						for(String a : currentQuestion.getAnswerList()) {
+							answer.add(a);
+							
+						}
+						
+						questionJSON.put("answer", answer);
+						questionJSON.put("timeout", currentQuestion.getTimeout());
+						
+					}else {
+						System.out.println("Question empty -> Player = setDone");
+						//ConnectionManager.countGameOver();
+						quiz.setDone(ConnectionManager.getPlayer(session));
+						questionJSON.put("type", SEND_QUESTIONEMPTY_TYPE);
+						
+					}
+					sendJSON(session, questionJSON);
 					
-					//TODO: question = quiz.requestQuestion(player, timeoutTask, error);
 					break;
 					
 				case RECV_QUESTIONANSWERED_TYPE:

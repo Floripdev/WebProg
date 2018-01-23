@@ -78,7 +78,10 @@ public class ConnectionManager
     
     public static synchronized int getSessionCount() { 
         return mapSessionPlayer.size();
+   
     }
+    
+    public static synchronized int 
     
  
 }
