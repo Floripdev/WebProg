@@ -1,4 +1,5 @@
 var request = null;
+var wert = 0;
 
 function loadCatalogs(){
 	request = new XMLHttpRequest;
@@ -13,7 +14,7 @@ function getCatalogNames(){
 	if(request.readyState == 4){
 		
 		//XML-String mit den Katalogen vom Servlet holen
-		var wert=request.responseXML.getElementsByTagName("catalogname");
+		wert=request.responseXML.getElementsByTagName("catalogname");
 		
 		//Cataloge einfügen
 		for(var i = 0; i < wert.length; i++){

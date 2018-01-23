@@ -1,4 +1,9 @@
-function sendLoginRequest(socket){
+var socketGlobal;
+var curSelection = -2;
+
+
+function sendLoginRequest(socket)
+{
 	var playerName = document.getElementById('usrname_txt').value;
 	console.log("Sending Login with Name: " + playerName + " length: " + playerName.length + " / rfc.js");
 	var msg = {
@@ -7,17 +12,18 @@ function sendLoginRequest(socket){
 			"name":playerName
 			
 	}
-	socket.send(JSON.stringify(msg));
+	socketGlobal = socket;
+	socketGlobal.send(JSON.stringify(msg));
 	
 }
 
-function sendQuestionRequest(socket){
+function sendQuestionRequest(){
 	var msg ={
 			"type":"8",
 			"length":"0"
 			
 	}
-	socket.send(JSON.stringify(msg));
+	socketGlobal.send(JSON.stringify(msg));
 	
 }
 
@@ -27,6 +33,31 @@ function sendCatalogChange(catalogName){
     		"catalogName":catalogName
     		
     }
-    socket.send(JSON.stringify(msg));
+    socketGlobal.send(JSON.stringify(msg));
 	
 }
+
+function sendStartGame()
+{
+	var msg = 
+		{
+			"type":"7",
+			"length":"0"
+		}
+	socketGlobal.send(JSON.stringify(msg));
+}
+
+function mouseClickListener(event) 
+{
+ 	
+	var msg = 
+	{
+			"type": "10",
+			"selection" : event.target.id
+	};
+
+
+
+ 	socketGlobal.send(JSON.stringify(msg));
+}
+

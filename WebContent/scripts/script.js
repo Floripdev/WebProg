@@ -91,8 +91,16 @@ function catalogSelected(elem){
     
     
 }
-function catalogSelected2(elem)
-{
+
+function catalogSelected2(elem){
+    var allCatalogs = document.getElementsByName('catalogs');
+    for(var i=0; i < allCatalogs.length; i++){
+        allCatalogs[i].style.backgroundColor = 'lightgray';
+        allCatalogs[i].style.color = 'black';
+        
+    }
+   elem.style.backgroundColor ='darkturquoise';
+    elem.style.color = 'white';
 	
 }
 
@@ -106,19 +114,26 @@ function startButtonPressed(){
     
 }
 
-function createRadio(quest, ausgabe){
+function createRadio(answer,cnt)
+{
+	var out = document.getElementById("questSektion");
     //Element erstellen (input, p, label)
     var myInput = document.createElement('input');
     var myPar = document.createElement('p');
     var myLabel = document.createElement('label');
+    var myPar2 = document.createElement('p');
+    
+
     
     
     //Dem input Tage werden die Werte für die Radio Buttons zugewiesen.
     myInput.type = "radio";
     myInput.name = 'question_radio';
-    myInput.value = 'Frage ' + quest + '?';
-    myInput.id = 'q' + quest;
+    myInput.value = answer;
+    myInput.id = cnt;
     
+    
+     
     var text = myInput.value;
     
     //Dem label den Input und einen Text zuweisen
@@ -126,7 +141,16 @@ function createRadio(quest, ausgabe){
     myLabel.appendChild(document.createTextNode(text));
     
     //Paragraph und Label in Website laden
-    ausgabe.appendChild(myPar);
-    ausgabe.appendChild(myLabel);
+    out.appendChild(myPar);
+    out.appendChild(myLabel);
     
 }
+
+function createQuestion(questString)
+{		
+	var quest = document.createElement("h1");
+	var out = document.getElementById("questSektion");
+	quest.appendChild(document.createTextNode(questString));
+	out.appendChild(quest);
+}
+

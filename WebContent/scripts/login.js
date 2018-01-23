@@ -1,12 +1,20 @@
 var socket;
+var numberOfPlayers = 0;
 var readySend = false;
 var isSuperuser = 0;
 var RECV_LOGINREQUEST_TYPE = 1;
 var RECVSUPERUSER_TYPE = 20;
-var RECVCATALOGCHANGE = 2;
+var RECVCATALOGCHANGE_TYPE = 2;
+var RECVSTART_GAME_TYPE = 3;
+var RECVQUESTIONREQUEST_TYPE = 9;
+var RECVPLAYERLIST_TYPE = 6;
+var ERROR_MSG = 255;
+var RECVQUESTION_ANSWERED_TYPE = 11;
+var RECVQUESTION_EMPTY_TYPE = 90;
 
 
-function initLogin(){
+function initLogin()
+{
 	var loginButton = document.getElementById('button_login');
 	var url = 'ws://localhost:8080/Aufgabe5/Echo';
 	console.log("URL=" + url);
@@ -22,20 +30,23 @@ function initLogin(){
 }
 
 //Funktion um das senden zu erlauben
-function openSend(){
+function openSend()
+{
 	readySend = true;
 	console.log("WebSocket | js: Senden nun möglich");
 	
 }
 
 //Funktion zur Fehlerbehandlung
-function errorHandling(event){
+function errorHandling(event)
+{
 	console.log("WebSocket | js: Fehler bei den WebSockets Fehler-->" + event.data);
 	
 }
 
 //Funktion zum schließen des Sockets,
-function closingSocket(event){
+function closingSocket(event)
+{
 	console.log("WebSocket | js: Websocket geschlossen -->" + event.code);
 	
 }
@@ -44,11 +55,12 @@ function closingSocket(event){
 
 			
 
-function receive(message)
+function recive(message)
 {
 	var msgServer = JSON.parse(message.data);
+	console.log("Message from server type: "+parseInt(msgServer.type)+ "msg: " +JSON.parse(message.data));
 	
-	switch(parseInt(msgServer.Type))
+	switch(parseInt(msgServer.type))
 	{
 	case RECV_LOGINREQUEST_TYPE: 
 	    var ausgabe = document.getElementById("mainarea");
@@ -59,20 +71,20 @@ function receive(message)
 		p_uname.remove();
 		usrname_txt.remove();
 		
-		if(isSuperuser === 1)
+	 	if(isSuperuser === 1)
 			{   
 			    var startButton = document.createElement("input");
 			    startButton.type = "button";
 			    startButton.id = "start_button";
 			    startButton.value = "Spiel Starten";
 			    ausgabe.appendChild(startButton);
-			    for(var x = 1; x < wert.length+1; x++)
+				document.getElementById("start_button").disabled = true;
+				
+				for(var x = 1; x < wert.length+1; x++)
 				{
 					var cat = document.getElementById("cat"+x);
 					cat.addEventListener('click', catalogSelected);
 				}
-				document.getElementById("start_button").addEventListener("click",startGame,false);
-				document.getElementById("start_button").disabled = true;
 			}
 		else
 			{
@@ -81,37 +93,136 @@ function receive(message)
 				ausgabe.appendChild(waitScreen);
 				ausgabe.appendChild(document.createTextNode("Warten auf Spielleiter..."))
 			}
+	 	break;
 	case RECVSUPERUSER_TYPE:					//Superuser Type
 		isSuperuser = 1;
 		break;
 		
 		
-	case RECVCATALOGCHANGE:
+	case RECVCATALOGCHANGE_TYPE:
 		if(isSuperuser === 1)
 			{
+				document.getElementById("start_button").addEventListener("click",sendStartGame,false);
 				document.getElementById("start_button").disabled = false;
 			}
 		else
 			{
+				var sendCat = null;
+				var curCat = document.getElementsByName("catalogs");
+				for(var i = 0;i < curCat.length;i++)
+					{
+						if(curCat[i].innerText === msgServer.data)
+							sendCat = curCat[i];
+					}
+				catalogSelected2(sendCat);
+			}
+			
+		break;
+		
+	case RECVSTART_GAME_TYPE:
+		var startbutton = document.getElementById("start_button");
+		
+		var pwait = document.getElementById("p_wait");
+		if(isSuperuser === 1)
+		{	
+			console.log(startbutton)
+			sendQuestionRequest();
+			startbutton.remove();
+		}
+		else
+		{
+			console.log(pwait);
+			pwait.remove();
+		}
+		break;
+		
+	case RECVQUESTIONREQUEST_TYPE:
+		var del = document.getElementById("questSektion");
+
+		if(del !== null)
+		{
+			del.remove();
+		}
+
+		var div = document.createElement('div');
+		div.id = "questSektion";
+		var ausgabe = document.getElementById("mainarea");
+		ausgabe.appendChild(div);
+		createQuestion(msgServer.question);
+		
+		for(var i = 0;i < 4;i++)
+			{
+				createRadio(msgServer.answer[i],i)
+				var listener = document.getElementById(i);
+				listener.addEventListener("click",mouseClickListener,false);
 				
 			}
 		
+		break;
+		
+	case RECVPLAYERLIST_TYPE:
+		var table = document.getElementById("table_score");
+		table.parentElement.removeChild(table);
+		
+		table = document.createElement("table");
+		table.id="table_score";
+		
+		var score = document.getElementById("scorefr");
+		score.appendChild(table);
+		for(var i = 0; i < msgServer.count; i++)
+		{
+			var row = table.insertRow(0);
+			
+			var cell1 = row.insertCell(0);
+			var cell2 = row.insertCell(1);
+			
+			
+			cell1.innerHTML = msgServer.players[i].name;
+			cell2.innerHTML = msgServer.players[i].score;
+			
+			console.log("Added Player" + i + " from " + msgServer.count + " Players to list " + msgServer.players[i].name );
+		}
+		break;
+	case ERROR_MSG:
+		alert("Fehler vom Server erhalten mit dem SubType: " + msgServer.subtype + ". Fehler Message: " + msgServer.msg);
+		break;
+	
+	
+	case RECVQUESTION_EMPTY_TYPE:
+		var hinweis = document.createTextNode("Warten auf andere Spieler");
+		
+		
+	case RECVQUESTION_ANSWERED_TYPE:
+		var correctAnswer = msgServer.correct;
+		for(var i = 0;i < 4;i++)
+		{
+			
+			var listener = document.getElementById("q"+i);
+			listener.removeEventListener("click",mouseClickListener,false);
+			
+		}
+		
+		sendQuestionRequest();
+		
+		break;
+			
+			
 		
 	
- 
-
-	}
-
-
+}
 }
 
-function login(){
-	if(readySend == true && socket != null){
+
+function login()
+{
+	if(readySend == true && socket != null)
+	{
 		sendLoginRequest(socket);
-		
-	}else{
+	}
+	else
+	{
 		console.log("Websocket noch nicht bereit zum senden /login.js");
 		
 	}
-	
 }
+
