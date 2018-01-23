@@ -111,7 +111,7 @@ public class FilesystemLoader implements CatalogLoader {
          */
         @Override
         public boolean accept(File pathname) {
-            if (pathname.isFile() && pathname.getName().endsWith(".xml")) //.cat in xml genändert
+            if (pathname.isFile() && pathname.getName().endsWith(".cat")) //.cat in xml genändert
                 return true;
             else
                 return false;
