@@ -25,7 +25,6 @@ import org.json.simple.parser.ParseException;
 
 import de.fhwgt.quiz.application.*;
 import de.fhwgt.quiz.error.*;
-import de.fhwgt.quiz.loader.FilesystemLoader;
 import thread.TimerThread;
 
 
@@ -41,7 +40,7 @@ public class Echo{
 	private static final int RECV_QUESTIONREQUEST_TYPE = 8;
 	private static final int RECV_QUESTIONANSWERED_TYPE = 10;
 	private static final int SEND_LOGINREQUEST_TYPE = 1;
-	private static final int SEND_CATALOGREQUEST_TYPE = 2;
+	private static final int SEND_CATALOGCHANGE_TYPE = 2;
 	private static final int SEND_STARTGAME = 3;
 	private static final int SEND_PLAYERLIST = 6;
 	private static final int SEND_QUESTIONREQUEST_TYPE = 9;
@@ -54,6 +53,7 @@ public class Echo{
 	private static final int PLAYERNAME_ALREADY_EXISTS = 1;
 	private static final int EMPTY_PLAYERNAME = 2;
 	private static final int GAMESTART_ERROR = 3;
+	private static final int CATALOG_ERROR = 4;
 	private static final int UNKNOWN_TYPE = 255;
 	
 	
@@ -110,27 +110,26 @@ public class Echo{
 								sendError(session, PLAYERNAME_ALREADY_EXISTS, error.getDescription(), error.getDescription().length());
 								break;
 								
-							}
-							ConnectionManager.addSession(session, player);
-							ConnectionManager.preSessionRemove(session);
-							if(player.isSuperuser()) {
-								JSONObject superUser = new JSONObject();
-								superUser.put("type", SEND_ISSUPERUSER_TYPE);
-								
-								sendJSON(session, superUser);
-								
-							}
-							JSONObject logRequest = new JSONObject();
-							logRequest.put("type", SEND_LOGINREQUEST_TYPE);
-							
-							sendJSON(session, logRequest);
-									
+							}								
 						}
 						if(!bcThread.isAlive()) {
 							bcThread = new broadcastThread();
 							bcThread.start();
 							
 						}
+						ConnectionManager.addSession(session, player);
+						ConnectionManager.preSessionRemove(session);
+						if(player.isSuperuser()) {
+							JSONObject superUser = new JSONObject();
+							superUser.put("type", SEND_ISSUPERUSER_TYPE);
+							
+							sendJSON(session, superUser);
+							
+						}
+						JSONObject logRequest = new JSONObject();
+						logRequest.put("type", SEND_LOGINREQUEST_TYPE);
+						
+						sendJSON(session, logRequest);
 						
 					}else {
 						sendError(session, EMPTY_PLAYERNAME, error.getDescription(), error.getDescription().length());
@@ -140,10 +139,16 @@ public class Echo{
 					break;
 					
 				case RECV_CATALOGCHANGE_TYPE:
+					//Überprüfen ob angemeldet mit javascript nur admin kann diese funktion aufrufen und diesen Reqzest senden
 					System.out.println("CatalogChange recieved from Client with SessionId: " + session.getId());
-					quiz.changeCatalog(ConnectionManager.getPlayer(session), msgJSON.get("catalog").toString(), error);
+					quiz.changeCatalog(ConnectionManager.getPlayer(session), msgJSON.get("catalogName").toString(), error);
+					if(error.isSet()) {
+						sendError(session, CATALOG_ERROR, error.getDescription(), error.getDescription().length());
+						break;
+						
+					}
 					JSONObject  katalogChangeJSON = new JSONObject();
-					katalogChangeJSON.put("type", SEND_CATALOGREQUEST_TYPE);
+					katalogChangeJSON.put("type", SEND_CATALOGCHANGE_TYPE);
 					katalogChangeJSON.put("data", quiz.getCurrentCatalog().toString());
 					broadcast(katalogChangeJSON);				
 					break;
@@ -182,7 +187,7 @@ public class Echo{
 						
 					}else {
 						System.out.println("Question empty -> Player = setDone");
-						//ConnectionManager.countGameOver();
+						ConnectionManager.countGameOver();
 						quiz.setDone(ConnectionManager.getPlayer(session));
 						questionJSON.put("type", SEND_QUESTIONEMPTY_TYPE);
 						
@@ -214,6 +219,7 @@ public class Echo{
 
 	
 	//Baut die Errors zusammen und sendet sie ab
+	@SuppressWarnings("unchecked")
 	public void sendError(Session session, int subtype, String message, int length) {
 		System.out.println("Creating ErrorMSG: " + message);
 		JSONObject error = new JSONObject();

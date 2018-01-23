@@ -18,7 +18,9 @@ public class ConnectionManager
 {   
 	private static Map <Session, Player> mapSessionPlayer = Collections.synchronizedMap(new ConcurrentHashMap<Session, Player>());
 	private static List <Session> mapPreSession = Collections.synchronizedList(new ArrayList<Session>());
- 
+	
+	private static int gameOver = 0;
+	
     // Synchronisierte Zugriffe auf die Liste
     public  static synchronized String outputAllSessions(){ return mapSessionPlayer.toString(); }  
     
@@ -81,7 +83,11 @@ public class ConnectionManager
    
     }
     
-    public static synchronized int 
+    public static synchronized int countGameOver() {
+    	gameOver += 1;
+    	return gameOver;
+    	
+    }
     
  
 }
