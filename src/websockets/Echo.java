@@ -47,6 +47,7 @@ public class Echo{
 	private static final int SEND_GAMEOVER_TYPE = 11;
 	private static final int SEND_QUESTIONEMPTY_TYPE = 90;
 	private static final int SEND_ISSUPERUSER_TYPE = 20;
+	private static final int SEND_QUESTIONANSWERED_TYPE = 12;
 	private static final int ERRORMSG_TYPE = 255;
 	
 	//DEFINES ERROR-SUBTYPES
@@ -187,7 +188,7 @@ public class Echo{
 						break;
 						
 					}
-					System.out.println(currentQuestion+error.getDescription());
+					System.out.println(currentQuestion);
 					if(currentQuestion != null) {
 						questionJSON.put("type", SEND_QUESTIONREQUEST_TYPE);
 						questionJSON.put("question", currentQuestion.getQuestion());
@@ -208,11 +209,23 @@ public class Echo{
 						quiz.setDone(ConnectionManager.getPlayer(session));
 						
 					}
-					sendJSON(session, questionJSON);
+					//System.out.println(questionJSON);
+					broadcast(questionJSON);
 					
 					break;
 					
-				case RECV_QUESTIONANSWERED_TYPE:
+			
+					 case RECV_QUESTIONANSWERED_TYPE:
+						Long index = Long.parseLong((String) msgJSON.get("selection").toString());
+						Long correctAnswer = quiz.answerQuestion(ConnectionManager.getPlayer(session), index, error);
+						if(correctAnswer != -1) {
+							JSONObject questResult = new JSONObject();
+							questResult.put("type", SEND_QUESTIONANSWERED_TYPE);
+							questResult.put("correct", correctAnswer.toString());
+							sendJSON(session, questResult);
+						}
+						
+						
 					
 					break;
 					
