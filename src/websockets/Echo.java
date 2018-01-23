@@ -1,7 +1,12 @@
 package websockets;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
 import java.util.TimerTask;
 
 import javax.websocket.CloseReason;
@@ -21,6 +26,7 @@ import org.json.simple.parser.ParseException;
 import de.fhwgt.quiz.application.*;
 import de.fhwgt.quiz.error.*;
 import de.fhwgt.quiz.loader.FilesystemLoader;
+import thread.TimerThread;
 
 
 
@@ -34,21 +40,27 @@ public class Echo{
 	private static final int RECV_GAMESTARTED_TYPE = 7;
 	private static final int RECV_QUESTIONREQUEST_TYPE = 8;
 	private static final int RECV_QUESTIONANSWERED_TYPE = 10;
+	private static final int SEND_LOGINREQUEST_TYPE = 1;
+	private static final int SEND_CATALOGREQUEST_TYPE = 2;
+	private static final int SEND_STARTGAME = 3;
+	private static final int SEND_PLAYERLIST = 6;
+	private static final int SEND_QUESTIONREQUEST_TYPE = 9;
+	private static final int SEND_QUESTIONEMPTY_TYPE = 90;
+	private static final int SEND_ISSUPERUSER_TYPE = 20;
 	private static final int ERRORMSG_TYPE = 255;
 	
 	//DEFINES ERROR-SUBTYPES
 	private static final int MAX_PLAYER_ERROR = 0;
 	private static final int PLAYERNAME_ALREADY_EXISTS = 1;
 	private static final int EMPTY_PLAYERNAME = 2;
+	private static final int GAMESTART_ERROR = 3;
 	private static final int UNKNOWN_TYPE = 255;
 	
 	
 	//Var declarations global in Function
 	private Quiz quiz = Quiz.getInstance();
 	private QuizError error = new QuizError();
-	private Player player;
-	private FilesystemLoader loader = new FilesystemLoader("catalogs");
-	private Question question;
+	private Thread bcThread = new broadcastThread();
 	
 	
 	@OnError
@@ -59,7 +71,7 @@ public class Echo{
 	
 	@OnOpen
 	public void open(Session session, EndpointConfig conf){
-		ConnectionManager.addSession(session);
+		ConnectionManager.addPreSession(session);
 		System.out.println("Open Session with SessionID=" + session.getId());
 		
 	}
@@ -67,10 +79,12 @@ public class Echo{
 	@OnClose
 	public void close(Session session, CloseReason reason) {
 		System.out.println("Closing Session with SessionID: " + session.getId());
+		ConnectionManager.preSessionRemove(session);
 		ConnectionManager.SessionRemove(session);
 		
 	}
 	
+	@SuppressWarnings({ "unchecked", "null" })
 	@OnMessage
 	public void echoTextMessage(Session session, String msg, boolean last) throws ParseException{
 		System.out.println("MSG recieved from Client with SessionID:  " + session.getId() + " Message Data: " + msg);
@@ -84,54 +98,97 @@ public class Echo{
 					String name = msgJSON.get("name").toString();
 						
 					if(name != null && name.length() > 0) {
-						player = quiz.createPlayer(name, error);
+						Player player = quiz.createPlayer(name, error);
 								
 						if(player == null) {
 							if(error.getType() == QuizErrorType.TOO_MANY_PLAYERS){
-								String errorMsg = new String("Es sind bereits 4 Spieler angemeldet!");
-								sendError(session, MAX_PLAYER_ERROR, errorMsg, errorMsg.length());
+								sendError(session, MAX_PLAYER_ERROR, error.getDescription(), error.getDescription().length());
+								break;
 									
 							}
 							if(error.getType() == QuizErrorType.USERNAME_TAKEN) {
-								String errorMsg = new String("Spielername bereits vergeben!");
-								sendError(session, PLAYERNAME_ALREADY_EXISTS, errorMsg, errorMsg.length());
-									
+								sendError(session, PLAYERNAME_ALREADY_EXISTS, error.getDescription(), error.getDescription().length());
+								break;
+								
 							}
+							ConnectionManager.addSession(session, player);
+							ConnectionManager.preSessionRemove(session);
+							if(player.isSuperuser()) {
+								JSONObject superUser = new JSONObject();
+								superUser.put("type", SEND_ISSUPERUSER_TYPE);
+								
+								sendJSON(session, superUser);
+								
+							}
+							JSONObject logRequest = new JSONObject();
+							logRequest.put("type", SEND_LOGINREQUEST_TYPE);
+							
+							sendJSON(session, logRequest);
 									
 						}
-						quiz.initCatalogLoader(loader);
+						if(!bcThread.isAlive()) {
+							bcThread = new broadcastThread();
+							bcThread.start();
+							
+						}
 						
 					}else {
-						String errorMsg = new String("Keinen Spielername angegeben");
-						sendError(session, EMPTY_PLAYERNAME, errorMsg, errorMsg.length());
+						sendError(session, EMPTY_PLAYERNAME, error.getDescription(), error.getDescription().length());
+						break;
 						
 					}
 					break;
 					
 				case RECV_CATALOGCHANGE_TYPE:
 					System.out.println("CatalogChange recieved from Client with SessionId: " + session.getId());
-					quiz.changeCatalog(player, msgJSON.get("catalog").toString(), error);
-					String currentCatalog = quiz.getCurrentCatalog().toString();
-					
-					//TODO: An alle broadcasten					
+					quiz.changeCatalog(ConnectionManager.getPlayer(session), msgJSON.get("catalog").toString(), error);
+					JSONObject  katalogChangeJSON = new JSONObject();
+					katalogChangeJSON.put("type", SEND_CATALOGREQUEST_TYPE);
+					katalogChangeJSON.put("data", quiz.getCurrentCatalog().toString());
+					broadcast(katalogChangeJSON);				
 					break;
 					
 				case  RECV_GAMESTARTED_TYPE:
-					//Admin überprüfung?
-					quiz.startGame(player, error);
+					System.out.println("StartGame Recived from Client with SessionID: " + session.getId());
+					if(quiz.startGame(ConnectionManager.getPlayer(session), error)) {
+						System.out.println("Game started!");
+						JSONObject gameStartJSON = new JSONObject();
+						gameStartJSON.put("type", SEND_STARTGAME);
+						gameStartJSON.put("length", "0");
+						gameStartJSON.put("data", "GAME STARTED");
+						broadcast(gameStartJSON);
+						
+					}else {
+						sendError(session, GAMESTART_ERROR, error.getDescription(), error.getDescription().length());
+						
+					}
 					break;
 					
 				case RECV_QUESTIONREQUEST_TYPE:
-					//TODO: TimerTask verwendung?
-					TimerTask timeoutTask = new TimerTask() {
-						
-						@Override
-						public void run() {
-							// TODO Auto-generated method stub
+					TimerTask timeoutTask = new TimerThread(session);
+					JSONObject questionJSON =new JSONObject();
+					JSONArray answer = new JSONArray();
+					Question currentQuestion = quiz.requestQuestion(ConnectionManager.getPlayer(session), timeoutTask, error);
+					if(currentQuestion != null) {
+						questionJSON.put("type", SEND_QUESTIONREQUEST_TYPE);
+						questionJSON.put("question", currentQuestion.getQuestion());
+						for(String a : currentQuestion.getAnswerList()) {
+							answer.add(a);
 							
 						}
-					};
-					question = quiz.requestQuestion(player, timeoutTask, error);
+						
+						questionJSON.put("answer", answer);
+						questionJSON.put("timeout", currentQuestion.getTimeout());
+						
+					}else {
+						System.out.println("Question empty -> Player = setDone");
+						//ConnectionManager.countGameOver();
+						quiz.setDone(ConnectionManager.getPlayer(session));
+						questionJSON.put("type", SEND_QUESTIONEMPTY_TYPE);
+						
+					}
+					sendJSON(session, questionJSON);
+					
 					break;
 					
 				case RECV_QUESTIONANSWERED_TYPE:
@@ -158,7 +215,7 @@ public class Echo{
 	
 	//Baut die Errors zusammen und sendet sie ab
 	public void sendError(Session session, int subtype, String message, int length) {
-		System.out.println("Creating Error JSONObject");
+		System.out.println("Creating ErrorMSG: " + message);
 		JSONObject error = new JSONObject();
 		error.put("type", ERRORMSG_TYPE);
 		error.put("subtype", subtype);
@@ -169,8 +226,7 @@ public class Echo{
 	}
 	
 	//Sendet JSONObject an den Client
-	
-	public void sendJSON(Session session, JSONObject obj) {
+	public static synchronized void sendJSON(Session session, JSONObject obj) {
 		System.out.println("Sending JSONObject to Client...");
 		try {
 			//Daten an Server schicken
@@ -180,6 +236,83 @@ public class Echo{
 			e.printStackTrace();
 		}
 		
+	}
+	
+	private static void broadcast(JSONObject objJSON){
+		Set<Session> sessionMap = ConnectionManager.getSessions();
+		for(Iterator<Session> iter = sessionMap.iterator(); iter.hasNext();){
+			Session ses = iter.next();
+			sendJSON(ses, objJSON);
+			
+		}
+		
+		List<Session> sessionList = ConnectionManager.getPreSessions();
+		if(sessionList.size() > 0){
+			for(Session s : sessionList){
+				sendJSON(s, objJSON);
+				
+			}
+			
+		}
+	}
+	
+	class broadcastThread extends Thread{
+		private Echo playerEndpoint;
+		
+		broadcastThread(){}
+		
+		@SuppressWarnings("unchecked")
+		public void run(){
+			System.out.println("~ BroadcastThread ~");
+			System.out.println("~ SessionCount: " + ConnectionManager.getSessionCount());
+			if(ConnectionManager.getSessionCount() > 0){
+				JSONObject playerList = new JSONObject();
+				playerList.put("type", SEND_PLAYERLIST);
+				playerList.put("length", ConnectionManager.getSessionCount() * 37);
+				Collection<Player> playerCollection = ConnectionManager.getPlayers();
+				JSONArray players = new JSONArray();
+				String spieler[][] = new String[playerCollection.size()][3];
+				int countPlayer = 0;
+				for(Player p : playerCollection){
+					spieler[countPlayer][0] = p.getName();
+					spieler[countPlayer][1] = "" + p.getScore();
+					spieler[countPlayer][2] = "" +p.getId();
+					countPlayer++;
+					
+				}
+				
+				Arrays.sort(spieler, new Comparator<String[]>(){
+					@Override
+					public int compare(final String[] entry1, final String[] entry2){
+						final String time1 = entry1[1];
+						int t1 = Integer.parseInt(time1);
+						final String time2 = entry2[1];
+						int t2 = Integer.parseInt(time2);
+						
+						return Integer.compare(t1, t2);
+						
+					}			
+					
+				});
+				
+				for(int i = 0; i < spieler.length; i++){
+					JSONObject obj = new JSONObject();
+					obj.put("name", spieler[i][0]);
+					obj.put("score", spieler[i][1]);
+					obj.put("id", spieler[i][2]);
+					players.add(obj);
+					
+				}
+				
+				playerList.put("players", players);
+				
+				//GameOver Nachricht an alle Clients
+				
+				
+			}
+			
+			
+		}
 		
 	}
 	

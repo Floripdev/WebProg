@@ -21,13 +21,7 @@ function getCatalogNames(){
 			
 		}
 		
-		//Catalog Listenern deklarieren
-		for(var x = 1; x < wert.length+1; x++){
-			var catTMP = document.getElementById("cat"+x);
-			catTMP.addEventListener('click', catalogSelected);
-			
-			
-		}
+		
 		
 	}
 	

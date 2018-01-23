@@ -3,7 +3,6 @@ var begin = 0;
 var end = text.length;
 var playerCnt = 0;
 var startButton = false;
-var catChangeCnt = 0;
 
 
 window.addEventListener("load", lauftext);
@@ -88,16 +87,13 @@ function catalogSelected(elem){
    elem.target.style.backgroundColor ='darkturquoise';
     elem.target.style.color = 'white';
     //TODO: überarbeiten weil sonst dauerschleife --> evtl in der Echo Java über isAdmin funktion
-    if(catChangeCnt === 0){
     	sendCatalogChange(elem.target.innerText);
-    	catChangeCnt++;
-    	
-    }else{
-    	catChangeCnt--;
-    	
-    }
     
     
+}
+function catalogSelected2(elem)
+{
+	
 }
 
 //Überprüft ob der Start Button gedrückt wurde und fügt 4 Radio Elemente hinzu

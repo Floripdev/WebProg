@@ -1,5 +1,10 @@
 var socket;
 var readySend = false;
+var isSuperuser = 0;
+var RECV_LOGINREQUEST_TYPE = 1;
+var RECVSUPERUSER_TYPE = 20;
+var RECVCATALOGCHANGE = 2;
+
 
 function initLogin(){
 	var loginButton = document.getElementById('button_login');
@@ -36,32 +41,68 @@ function closingSocket(event){
 }
 
 //Funktion zum Empfangen von Daten
-function receive()
+
+			
+
+function receive(message)
 {
 	var msgServer = JSON.parse(message.data);
-	if(parseInt(msgServer.Type) == 2)
-		{
-			msgServer.clientid;
-			console.log("ID: " + clientid);
-			if(clientid == 0)
-			{
-				window.document.getElementById("start_button").disabled = false;
-				document.getElementById("start_button").addEventListener("click", startGame,false);
-				var loginButton = document.getElementById("Login_Button");
-				loginButton.parentNode.removeChild(loginButton);
-				loginButton = document.getElementById("usrname_txt")
-				loginButton.parentNode.removeChild(loginButton);
+	
+	switch(parseInt(msgServer.Type))
+	{
+	case RECV_LOGINREQUEST_TYPE: 
+	    var ausgabe = document.getElementById("mainarea");
+		var loginButton = document.getElementById("button_login");
+		var p_uname = document.getElementById("p_uname");
+		var usrname_txt = document.getElementById("usrname_txt");
+		loginButton.remove();
+		p_uname.remove();
+		usrname_txt.remove();
+		
+		if(isSuperuser === 1)
+			{   
+			    var startButton = document.createElement("input");
+			    startButton.type = "button";
+			    startButton.id = "start_button";
+			    startButton.value = "Spiel Starten";
+			    ausgabe.appendChild(startButton);
+			    for(var x = 1; x < wert.length+1; x++)
+				{
+					var cat = document.getElementById("cat"+x);
+					cat.addEventListener('click', catalogSelected);
+				}
+				document.getElementById("start_button").addEventListener("click",startGame,false);
+				document.getElementById("start_button").disabled = true;
 			}
-			
-			if(clientid != 0)
+		else
 			{
-				var input = document.getElementById("input");
-				input.parentNode.removeChild(input);
-
-			
-
+				var waitScreen = document.createElement("p");
+				waitScreen.id = "p_wait";
+				ausgabe.appendChild(waitScreen);
+				ausgabe.appendChild(document.createTextNode("Warten auf Spielleiter..."))
 			}
-}
+	case RECVSUPERUSER_TYPE:					//Superuser Type
+		isSuperuser = 1;
+		break;
+		
+		
+	case RECVCATALOGCHANGE:
+		if(isSuperuser === 1)
+			{
+				document.getElementById("start_button").disabled = false;
+			}
+		else
+			{
+				
+			}
+		
+		
+	
+ 
+
+	}
+
+
 }
 
 function login(){
