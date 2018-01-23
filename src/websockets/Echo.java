@@ -44,6 +44,7 @@ public class Echo{
 	private static final int SEND_STARTGAME = 3;
 	private static final int SEND_PLAYERLIST = 6;
 	private static final int SEND_QUESTIONREQUEST_TYPE = 9;
+	private static final int SEND_GAMEOVER_TYPE = 11;
 	private static final int SEND_QUESTIONEMPTY_TYPE = 90;
 	private static final int SEND_ISSUPERUSER_TYPE = 20;
 	private static final int ERRORMSG_TYPE = 255;
@@ -128,8 +129,10 @@ public class Echo{
 						}
 						JSONObject logRequest = new JSONObject();
 						logRequest.put("type", SEND_LOGINREQUEST_TYPE);
-						
 						sendJSON(session, logRequest);
+						/*
+						JSONObject playerList = new JSONObject();
+						playerList.put("type", SEND_PLAYERLIST);*/
 						
 					}else {
 						sendError(session, EMPTY_PLAYERNAME, error.getDescription(), error.getDescription().length());
@@ -149,7 +152,8 @@ public class Echo{
 					}
 					JSONObject  katalogChangeJSON = new JSONObject();
 					katalogChangeJSON.put("type", SEND_CATALOGCHANGE_TYPE);
-					katalogChangeJSON.put("data", quiz.getCurrentCatalog().toString());
+					katalogChangeJSON.put("data", quiz.getCurrentCatalog().getName());
+					System.out.println("Current Catalog: " + quiz.getCurrentCatalog().getName());
 					broadcast(katalogChangeJSON);				
 					break;
 					
@@ -159,7 +163,6 @@ public class Echo{
 						System.out.println("Game started!");
 						JSONObject gameStartJSON = new JSONObject();
 						gameStartJSON.put("type", SEND_STARTGAME);
-						gameStartJSON.put("length", "0");
 						gameStartJSON.put("data", "GAME STARTED");
 						broadcast(gameStartJSON);
 						
@@ -274,7 +277,7 @@ public class Echo{
 			if(ConnectionManager.getSessionCount() > 0){
 				JSONObject playerList = new JSONObject();
 				playerList.put("type", SEND_PLAYERLIST);
-				playerList.put("length", ConnectionManager.getSessionCount() * 37);
+				playerList.put("count", ConnectionManager.getSessionCount());
 				Collection<Player> playerCollection = ConnectionManager.getPlayers();
 				JSONArray players = new JSONArray();
 				String spieler[][] = new String[playerCollection.size()][3];
@@ -313,6 +316,21 @@ public class Echo{
 				playerList.put("players", players);
 				
 				//GameOver Nachricht an alle Clients
+				JSONObject gameOver = new JSONObject();
+				if(ConnectionManager.getGameOver() == playerList.size()) {
+					gameOver.put("type", SEND_GAMEOVER_TYPE);
+					
+					Set<Session> sList =ConnectionManager.getSessions();
+					for(Iterator<Session> iter = sList.iterator(); iter.hasNext();) {
+						Session s = iter.next();
+						//Nachricht an alle "echten" Sessions senden
+						Echo.sendJSON(s, gameOver);
+						
+					}
+					
+				}
+				broadcast(playerList);	
+					
 				
 				
 			}

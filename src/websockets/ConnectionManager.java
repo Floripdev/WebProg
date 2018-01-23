@@ -89,5 +89,10 @@ public class ConnectionManager
     	
     }
     
+    public static synchronized int getGameOver() {
+    	return gameOver;
+    	
+    }
+    
  
 }
