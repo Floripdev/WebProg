@@ -36,9 +36,47 @@ function closingSocket(event){
 }
 
 //Funktion zum Empfangen von Daten
-function recive(){
+function receive(message)
+{
+	var msgServer = JSON.parse(message.data);
 	
+	switch(parseInt(msgServer.Type))
+	{
+	case loginRequest: 
+	    var ausgabe = document.getElementById("mainarea");
+		var loginButton = document.getElementById("button_login");
+		var p_uname = document.getElementById("p_uname");
+		var usrname_txt = document.getElementById("usrname_txt");
+		loginButton.remove();
+		p_uname.remove();
+		usrname_txt.remove();
+		
+		if(isSuperuser === 1)
+			{   
+			    var startButton = document.createElement("input");
+			    startButton.type = "button";
+			    startButton.id = "start_button";
+			    startButton.value = "Spiel Starten";
+			    ausgabe.appendChild(startButton);
+			 	document.getElementById("start_button").addEventListener("click",startGame,false);
+			}
+		else
+			{
+				var waitScreen = document.createElement("p");
+				waitScreen.id = "p_wait";
+				ausgabe.appendChild(waitScreen);
+				ausgabe.appendChild(document.createTextNode("Warten auf Spielleiter..."))
+			}
+	case 20:					//Superuser Type
+		isSuperuser = 1;
+		break;
+		
 	
+ 
+
+	}
+
+
 }
 
 function login(){
