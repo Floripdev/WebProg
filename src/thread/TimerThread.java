@@ -14,7 +14,7 @@ import websockets.ConnectionManager;
 
 
 public class TimerThread extends TimerTask {
-	private static final int SEND_TIMEOUT_TYPE = 27;
+	private static final int SEND_QUESTIONANSWERED_TYPE = 12;
 	private static final int QUESTION_ERROR = 4;
 	
 	Session session;
@@ -45,8 +45,7 @@ public class TimerThread extends TimerTask {
 			
 		}else {
 			JSONObject timeout = new JSONObject();
-			timeout.put("type", SEND_TIMEOUT_TYPE);
-			timeout.put("timeout", "1");
+			timeout.put("type", SEND_QUESTIONANSWERED_TYPE);
 			timeout.put("correct", "-1");
 			
 			try {

@@ -8,6 +8,8 @@ var RECVCATALOGCHANGE_TYPE = 2;
 var RECVSTART_GAME_TYPE = 3;
 var RECVQUESTIONREQUEST_TYPE = 9;
 var RECVPLAYERLIST_TYPE = 6;
+var RECVTIMEOUT_TYPE = 27;
+var RECVGAMEOVER_TYPE = 11;
 var ERROR_MSG = 255;
 var RECVQUESTION_ANSWERED_TYPE = 12;
 var RECVQUESTION_EMPTY_TYPE = 90;
@@ -177,8 +179,6 @@ function recive(message)
 			
 			cell1.innerHTML = msgServer.players[i].name;
 			cell2.innerHTML = msgServer.players[i].score;
-			
-			console.log("Added Player" + i + " from " + msgServer.count + " Players to list " + msgServer.players[i].name );
 		}
 		break;
 	case ERROR_MSG:
@@ -190,8 +190,10 @@ function recive(message)
 		var remQuest = document.getElementById("questSektion");
 		remQuest.remove();
 		var output = document.getElementById("mainarea");
-		output.appendChild(document.createTextNode("Warten auf andere Spieler"));
-		
+		var end = document.createElement("h1");
+		end.id = "wait";
+		end.appendChild(document.createTextNode("Warten auf andere Spieler"));
+		output.appendChild(end);
 		break;
 		
 		
@@ -201,30 +203,60 @@ function recive(message)
 		if(correctAnswer != -1){
 			for(var i = 0; i < 4; i++){
 				var correctRadio = document.getElementById(i);
+				var label = document.getElementById("label"+i);
 				if(correctRadio.id === correctAnswer){
-					correctRadio.style.background = "green";
+					label.style.color = "green";
 					
 				}else{
-					correctRadio.style.background = "red";
+					label.style.color = "red";
 					
 				}
 				
 			}
 			
 			
-		}
-		for(var i = 0;i < 4;i++)
-		{
+		}else{
+			for(var i = 0; i < 4; i++){
+				var label = document.getElementById("label"+i);
+				label.style.color = "red";
+				
+			}
+			setTimeout(function(){
+				sendQuestionRequest();
+			}, 3000);
+			break;
 			
+		}
+		setTimeout(function(){
+			for(var i = 0;i < 4;i++){
 			var listener = document.getElementById(i);
+			var label = document.getElementById("label" + i);
 			listener.removeEventListener("click",mouseClickListener,false);
-			
-		}
-		setTimeout(sendQuestionRequest(), 3000);
+			label.style.color = "black";	
+		} sendQuestionRequest();},
+		3000);
+		
 		
 		break;
+		
+	case RECVGAMEOVER_TYPE:	
+		var output = document.getElementById("mainarea");
+		var clear = document.getElementById("wait");
+		var restart = document.createElement("input");
+		clear.remove();
+		var endGame = document.createElement("h1");
+		endGame.appendChild(document.createTextNode("Spieler " + msgServer.name + " hat gewonnen mit einem Score von: " +msgServer.score));
+		output.appendChild(endGame);
+		
+		restart.id = "restart";
+		restart.value = "Neues Spiel starten";
+		restart.type = "button";
+		restart.addEventListener("click", restartGame, false);
+		if(isSuperuser === 1){
+			output.appendChild(restart);
 			
-			
+		}
+		break;
 		
 	
 }

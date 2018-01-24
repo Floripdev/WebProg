@@ -72,8 +72,11 @@ public class broadcastThread extends Thread{
 			
 			//GameOver Nachricht an alle Clients
 			JSONObject gameOver = new JSONObject();
-			if(ConnectionManager.getGameOver() == playerList.size()-1) {
+			System.out.println("PLAYERLISTSIZE: " + (int) playerList.get("count"));
+			if(ConnectionManager.getGameOver() == (int) playerList.get("count")) {
 				gameOver.put("type", SEND_GAMEOVER_TYPE);
+				gameOver.put("name", spieler[ConnectionManager.getSessionCount()-1][0]);
+				gameOver.put("score", spieler[ConnectionManager.getSessionCount()-1][1]);
 				
 				Set<Session> sList =ConnectionManager.getSessions();
 				for(Iterator<Session> iter = sList.iterator(); iter.hasNext();) {

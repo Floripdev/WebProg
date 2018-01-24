@@ -120,7 +120,7 @@ function createRadio(answer,cnt)
     //Element erstellen (input, p, label)
     var myInput = document.createElement('input');
     var myPar = document.createElement('p');
-    var myLabel = document.createElement('label');
+    var myLabel = document.createElement('span');
     var myPar2 = document.createElement('p');
     
 
@@ -131,6 +131,7 @@ function createRadio(answer,cnt)
     myInput.name = 'question_radio';
     myInput.value = answer;
     myInput.id = cnt;
+    myLabel.id = "label"+cnt;
     
     
      

@@ -37,6 +37,7 @@ public class Echo{
 	private static final int RECV_GAMESTARTED_TYPE = 7;
 	private static final int RECV_QUESTIONREQUEST_TYPE = 8;
 	private static final int RECV_QUESTIONANSWERED_TYPE = 10;
+	private static final int RECV_RESTARTGAME_TYPE = 150;
 	private static final int SEND_LOGINREQUEST_TYPE = 1;
 	private static final int SEND_CATALOGCHANGE_TYPE = 2;
 	private static final int SEND_STARTGAME = 3;
@@ -204,12 +205,11 @@ public class Echo{
 						ConnectionManager.countGameOver();
 						questionJSON.put("type", SEND_QUESTIONEMPTY_TYPE);
 						quiz.setDone(ConnectionManager.getPlayer(session));
-						if(!bcThread.isAlive()) {
-							bcThread = new broadcastThread();
-							bcThread.start();
-							
-						}
-
+					
+					}
+					if(!bcThread.isAlive()) {
+						bcThread = new broadcastThread();
+						bcThread.start();
 						
 					}
 					sendJSON(session, questionJSON);
@@ -230,6 +230,10 @@ public class Echo{
 					
 				case ERRORMSG_TYPE:
 					System.out.println("Error from Client with SessionID: " + session.getId() + " print Message: " + msg);
+					break;
+					
+				case RECV_RESTARTGAME_TYPE:
+					System.out.println("Restart Button gedrückt");
 					break;
 					
 				default: 
@@ -289,13 +293,6 @@ public class Echo{
 			
 		}
 	}
-	
-
-	
-
-	
-
-	
 	
 	
 }

@@ -61,3 +61,12 @@ function mouseClickListener(event)
  	socketGlobal.send(JSON.stringify(msg));
 }
 
+function restartGame(){
+	var msg = {
+			"type": "150"
+			
+	};
+	socketGlobal.send(JSON.stringify(msg));
+	
+}
+
