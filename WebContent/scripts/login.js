@@ -187,8 +187,12 @@ function recive(message)
 	
 	
 	case RECVQUESTION_EMPTY_TYPE:
-		var hinweis = document.createTextNode("Warten auf andere Spieler");
-		brak;
+		var remQuest = document.getElementById("questSektion");
+		remQuest.remove();
+		var output = document.getElementById("mainarea");
+		output.appendChild(document.createTextNode("Warten auf andere Spieler"));
+		
+		break;
 		
 		
 	case RECVQUESTION_ANSWERED_TYPE:

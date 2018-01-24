@@ -14,7 +14,7 @@ import websockets.ConnectionManager;
 
 
 public class TimerThread extends TimerTask {
-	private static final int SEND_TIMEOUT_TYPE = 11;
+	private static final int SEND_TIMEOUT_TYPE = 27;
 	private static final int QUESTION_ERROR = 4;
 	
 	Session session;

@@ -1,9 +1,6 @@
 package websockets;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -26,6 +23,7 @@ import org.json.simple.parser.ParseException;
 import de.fhwgt.quiz.application.*;
 import de.fhwgt.quiz.error.*;
 import thread.TimerThread;
+import thread.broadcastThread;
 
 
 
@@ -42,9 +40,9 @@ public class Echo{
 	private static final int SEND_LOGINREQUEST_TYPE = 1;
 	private static final int SEND_CATALOGCHANGE_TYPE = 2;
 	private static final int SEND_STARTGAME = 3;
-	private static final int SEND_PLAYERLIST = 6;
+	//private static final int SEND_PLAYERLIST = 6;
 	private static final int SEND_QUESTIONREQUEST_TYPE = 9;
-	private static final int SEND_GAMEOVER_TYPE = 11;
+	//private static final int SEND_GAMEOVER_TYPE = 11;
 	private static final int SEND_QUESTIONEMPTY_TYPE = 90;
 	private static final int SEND_ISSUPERUSER_TYPE = 20;
 	private static final int SEND_QUESTIONANSWERED_TYPE = 12;
@@ -86,7 +84,7 @@ public class Echo{
 		
 	}
 	
-	@SuppressWarnings({ "unchecked", "null" })
+	@SuppressWarnings({ "unchecked" })
 	@OnMessage
 	public void echoTextMessage(Session session, String msg, boolean last) throws ParseException{
 		System.out.println("MSG recieved from Client with SessionID:  " + session.getId() + " Message Data: " + msg);
@@ -119,6 +117,9 @@ public class Echo{
 							bcThread.start();
 							
 						}
+							
+							
+						
 						ConnectionManager.addSession(session, player);
 						ConnectionManager.preSessionRemove(session);
 						if(player.isSuperuser()) {
@@ -203,6 +204,12 @@ public class Echo{
 						ConnectionManager.countGameOver();
 						questionJSON.put("type", SEND_QUESTIONEMPTY_TYPE);
 						quiz.setDone(ConnectionManager.getPlayer(session));
+						if(!bcThread.isAlive()) {
+							bcThread = new broadcastThread();
+							bcThread.start();
+							
+						}
+
 						
 					}
 					sendJSON(session, questionJSON);
@@ -219,9 +226,6 @@ public class Echo{
 							questResult.put("correct", correctAnswer.toString());
 							sendJSON(session, questResult);
 						}
-						
-						
-					
 					break;
 					
 				case ERRORMSG_TYPE:
@@ -268,7 +272,7 @@ public class Echo{
 		
 	}
 	
-	private static void broadcast(JSONObject objJSON){
+	public static void broadcast(JSONObject objJSON){
 		Set<Session> sessionMap = ConnectionManager.getSessions();
 		for(Iterator<Session> iter = sessionMap.iterator(); iter.hasNext();){
 			Session ses = iter.next();
@@ -286,80 +290,9 @@ public class Echo{
 		}
 	}
 	
-	class broadcastThread extends Thread{
-		private Echo playerEndpoint;
-		
-		broadcastThread(){}
-		
-		@SuppressWarnings("unchecked")
-		public void run(){
-			System.out.println("~ BroadcastThread ~");
-			System.out.println("~ SessionCount: " + ConnectionManager.getSessionCount());
-			if(ConnectionManager.getSessionCount() > 0){
-				JSONObject playerList = new JSONObject();
-				playerList.put("type", SEND_PLAYERLIST);
-				playerList.put("count", ConnectionManager.getSessionCount());
-				Collection<Player> playerCollection = ConnectionManager.getPlayers();
-				JSONArray players = new JSONArray();
-				String spieler[][] = new String[playerCollection.size()][3];
-				int countPlayer = 0;
-				for(Player p : playerCollection){
-					spieler[countPlayer][0] = p.getName();
-					spieler[countPlayer][1] = "" + p.getScore();
-					spieler[countPlayer][2] = "" +p.getId();
-					countPlayer++;
-					
-				}
-				
-				Arrays.sort(spieler, new Comparator<String[]>(){
-					@Override
-					public int compare(final String[] entry1, final String[] entry2){
-						final String time1 = entry1[1];
-						int t1 = Integer.parseInt(time1);
-						final String time2 = entry2[1];
-						int t2 = Integer.parseInt(time2);
-						
-						return Integer.compare(t1, t2);
-						
-					}			
-					
-				});
-				
-				for(int i = 0; i < spieler.length; i++){
-					JSONObject obj = new JSONObject();
-					obj.put("name", spieler[i][0]);
-					obj.put("score", spieler[i][1]);
-					obj.put("id", spieler[i][2]);
-					players.add(obj);
-					
-				}
-				
-				playerList.put("players", players);
-				
-				//GameOver Nachricht an alle Clients
-				JSONObject gameOver = new JSONObject();
-				if(ConnectionManager.getGameOver() == playerList.size()) {
-					gameOver.put("type", SEND_GAMEOVER_TYPE);
-					
-					Set<Session> sList =ConnectionManager.getSessions();
-					for(Iterator<Session> iter = sList.iterator(); iter.hasNext();) {
-						Session s = iter.next();
-						//Nachricht an alle "echten" Sessions senden
-						Echo.sendJSON(s, gameOver);
-						
-					}
-					
-				}
-				broadcast(playerList);	
-					
-				
-				
-			}
-			
-			
-		}
-		
-	}
+
+	
+
 	
 
 	
