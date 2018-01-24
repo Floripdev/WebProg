@@ -125,14 +125,13 @@ function recive(message)
 		var pwait = document.getElementById("p_wait");
 		if(isSuperuser === 1)
 		{	
-			console.log(startbutton)
-			sendQuestionRequest();
 			startbutton.remove();
 		}
 		else
 		{
 			pwait.remove();
 		}
+		sendQuestionRequest();
 		break;
 		
 	case RECVQUESTIONREQUEST_TYPE:
@@ -189,6 +188,7 @@ function recive(message)
 	
 	case RECVQUESTION_EMPTY_TYPE:
 		var hinweis = document.createTextNode("Warten auf andere Spieler");
+		brak;
 		
 		
 	case RECVQUESTION_ANSWERED_TYPE:

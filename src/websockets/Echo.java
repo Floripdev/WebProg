@@ -205,7 +205,7 @@ public class Echo{
 						quiz.setDone(ConnectionManager.getPlayer(session));
 						
 					}
-					broadcast(questionJSON);
+					sendJSON(session, questionJSON);
 					
 					break;
 					

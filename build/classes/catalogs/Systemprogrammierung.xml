@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<catalogue>
+	<catalogueID>3</catalogueID>
+	<catalogueTitle>Systemprogrammierung</catalogueTitle>
+	<catalogueQuestions>12</catalogueQuestions>
+	<catalogueDifficulty>Difficult</catalogueDifficulty>
+	<questions>
+		<question>
+			<questionText>Ein Thread soll auf ein durch einen anderen Thread ausgelöstes Ereignis warten. Welcher Mechanismus ist geeignet?</questionText>
+			<questionTimeOut>30</questionTimeOut>
+			<answer right="false">nur Semaphore</answer>
+            <answer right="false">nur Mutex</answer>
+            <answer right="false">weder Semaphor noch Mutexe</answer>
+            <answer right="false">sowohl Semaphor als auch Mutexe</answer>
+		</question>
+        <question>
+			<questionText>Der Systemaufruf fork...</questionText>
+			<questionTimeOut>20</questionTimeOut>
+			<answer right="false">...erzeugt einen neuen Prozess, der das gleiche Programm ausführt.</answer>
+            <answer right="false">...erzeugt einen neuen Prozess, der ein anderes Programm ausführt.</answer>
+            <answer right="false">...erzeugt einen neuen Thread.</answer>
+            <answer right="false">...ist das logische Gegenstück zum Aufruf knife.</answer>
+		</question>
+        <question>
+			<questionText>In einem Signalhandler...</questionText>
+			<questionTimeOut>30</questionTimeOut>
+			<answer right="false">...dürfen nur bestimmte Funktionen aufgerufen werden.</answer>
+            <answer right="false">...kann man problemlos alles machen, was man auch im regulären Programmcode macht.</answer>
+            <answer right="false">...dürfen keine Fließkommaoperationen durchgeführt werden.</answer>
+            <answer right="false">...ist nur der Systemaufruf write verboten.</answer>
+		</question>
+        <question>
+			<questionText>Sie möchten eine Datenstruktur vor gleichzeitigem Zugriff aus mehreren Threads schützen. Welcher Mechanismus ist dafür geeignet?</questionText>
+			<questionTimeOut>30</questionTimeOut>
+			<answer right="false">sowohl Semaphore als auch Mutexe</answer>
+            <answer right="false">nur Semaphore</answer>
+            <answer right="false">nur Mutexe</answer>
+            <answer right="false">nur Signale</answer>
+		</question>
+        <question>
+			<questionText>Es soll darauf gewartet werden, dass Daten eintreffen, allerdings nur eine bestimmte Zeit. Wie kann man das umsetzen?</questionText>
+			<questionTimeOut>30</questionTimeOut>
+			<answer right="false">mit dem Systemaufruf select</answer>
+            <answer right="false">durch einen zusätzlichen Timeout-Parameter bei read oder recv</answer>
+            <answer right="false">gar nicht</answer>
+            <answer right="false">durch Setzen des Timeout-Status mit fcntl</answer>
+		</question>
+        <question>
+			<questionText>Mit welchem Systemaufruf kann man den Port festlegen, auf dem ein Serverprogramm auf Verbindungen wartet?</questionText>
+			<questionTimeOut>30</questionTimeOut>
+			<answer right="false">bind</answer>
+            <answer right="false">accept</answer>
+            <answer right="false">setsock</answer>
+            <answer right="false">open</answer>
+		</question>
+        <question>
+			<questionText>Während eines read-Aufrufs tritt ein Signal auf und wird durch einen Signalhandler abgearbeitet (SA_RESTART nicht gesetzt). Was passiert?</questionText>
+			<questionTimeOut>45</questionTimeOut>
+			<answer right="false">Der Aufruf kehrt unter Umständen mit weniger Daten als angefordert oder EINTR zurück.</answer>
+            <answer right="false">Es werden auf jeden Fall so viele Daten gelesen wie angefordert.</answer>
+            <answer right="false">Die Daten gehen verloren.</answer>
+            <answer right="false">Das Programm wird in solchen Fällen vom Betriebssystem abgebrochen.</answer>
+		</question>
+        		<question>
+			<questionText>Beim Lesen aus einer Pipe meldet der Aufruf read das Dateiende, wenn...</questionText>
+			<questionTimeOut>20</questionTimeOut>
+			<answer right="false">...alle Schreib-Deskriptoren für die Pipe geschlossen und alle Daten aus der Pipe gelesen wurden.</answer>
+            <answer right="false">...der Leser ein spezielles Signal erhält.</answer>
+            <answer right="false">...der schreibende Prozess fork aufruft.</answer>
+            <answer right="false">... in die Pipe geschrieben wird.</answer>
+		</question>
+        		<question>
+			<questionText>Was passiert mit einem Shared-Memory-Objekt, wenn es nicht manuell gelöscht wird?</questionText>
+			<questionTimeOut>30</questionTimeOut>
+			<answer right="false">Es bleibt weiterhin bestehen, bis es von Hand oder durch einen Reboot gelöscht wurde.</answer>
+            <answer right="false">Es wird zerstört, wenn sich der Prozess beendet, der es erzeugt hat.</answer>
+            <answer right="false">Es wird zerstört, wenn kein Prozess mehr auf es zugreift.</answer>
+            <answer right="false">Der Garbage-Collector des Betriebssystems zerstört es, wenn der Speicher knapp wird.</answer>
+		</question>
+        		<question>
+			<questionText>Welches dieser Signale kann nicht abgefangen werden?</questionText>
+			<questionTimeOut>30</questionTimeOut>
+			<answer right="false">SIGKILL</answer>
+            <answer right="false">SIGTERM</answer>
+            <answer right="false">SIGINIT</answer>
+            <answer right="false">SIGPIPE</answer>
+		</question>
+        		<question>
+			<questionText>Was ist ein Zombie-Prozess unter Unix?</questionText>
+			<questionTimeOut>30</questionTimeOut>
+			<answer right="false">Ein Prozess, dessen Exit-Status noch nicht mittels wait abgefragt wurde.</answer>
+            <answer right="false">Ein Daemon-Prozess, der durch den Aufruf zombie immun gegen das KILL-Signal gemacht wurde.</answer>
+            <answer right="false">Ein Prozess, der nur nachts gestartet werden kann.</answer>
+            <answer right="false">Ein Computervirus.</answer>
+		</question>
+        		<question>
+			<questionText>Welches Signal (sofern nicht ignoriert) empfängt ein Elternprozess, wenn sich einer seiner Kindprozesse beendet?</questionText>
+			<questionTimeOut>30</questionTimeOut>
+			<answer right="false">SIGCHLD</answer>
+            <answer right="false">SIGSYS</answer>
+            <answer right="false">SIGSEGV</answer>
+            <answer right="false">SIGABRT</answer>
+		</question>
+	</questions>
+</catalogue>
