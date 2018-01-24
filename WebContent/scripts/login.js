@@ -9,7 +9,7 @@ var RECVSTART_GAME_TYPE = 3;
 var RECVQUESTIONREQUEST_TYPE = 9;
 var RECVPLAYERLIST_TYPE = 6;
 var ERROR_MSG = 255;
-var RECVQUESTION_ANSWERED_TYPE = 11;
+var RECVQUESTION_ANSWERED_TYPE = 12;
 var RECVQUESTION_EMPTY_TYPE = 90;
 
 
@@ -90,8 +90,8 @@ function recive(message)
 			{
 				var waitScreen = document.createElement("p");
 				waitScreen.id = "p_wait";
+				waitScreen.appendChild(document.createTextNode("Warten auf Spielleiter..."));
 				ausgabe.appendChild(waitScreen);
-				ausgabe.appendChild(document.createTextNode("Warten auf Spielleiter..."))
 			}
 	 	break;
 	case RECVSUPERUSER_TYPE:					//Superuser Type
@@ -131,7 +131,6 @@ function recive(message)
 		}
 		else
 		{
-			console.log(pwait);
 			pwait.remove();
 		}
 		break;
@@ -194,15 +193,30 @@ function recive(message)
 		
 	case RECVQUESTION_ANSWERED_TYPE:
 		var correctAnswer = msgServer.correct;
+		console.log("CorrrectAnswer: " + correctAnswer);
+		if(correctAnswer != -1){
+			for(var i = 0; i < 4; i++){
+				var correctRadio = document.getElementById(i);
+				if(correctRadio.id === correctAnswer){
+					correctRadio.style.background = "green";
+					
+				}else{
+					correctRadio.style.background = "red";
+					
+				}
+				
+			}
+			
+			
+		}
 		for(var i = 0;i < 4;i++)
 		{
 			
-			var listener = document.getElementById("q"+i);
+			var listener = document.getElementById(i);
 			listener.removeEventListener("click",mouseClickListener,false);
 			
 		}
-		
-		sendQuestionRequest();
+		setTimeout(sendQuestionRequest(), 3000);
 		
 		break;
 			

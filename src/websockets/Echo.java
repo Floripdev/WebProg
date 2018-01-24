@@ -177,10 +177,7 @@ public class Echo{
 					TimerTask timeoutTask = new TimerThread(session);
 					JSONObject questionJSON =new JSONObject();
 					JSONArray answer = new JSONArray();
-					System.out.println("case8"+session);
-					System.out.println("Case 8:"+ConnectionManager.getPlayer(session));
 					Question currentQuestion = quiz.requestQuestion(ConnectionManager.getPlayer(session), timeoutTask, error);
-					System.out.println("Question " + currentQuestion);
 					if(error.isSet()) 
 					{	
 						System.out.println(error.getDescription());
@@ -188,7 +185,6 @@ public class Echo{
 						break;
 						
 					}
-					System.out.println(currentQuestion);
 					if(currentQuestion != null) {
 						questionJSON.put("type", SEND_QUESTIONREQUEST_TYPE);
 						questionJSON.put("question", currentQuestion.getQuestion());
@@ -209,7 +205,6 @@ public class Echo{
 						quiz.setDone(ConnectionManager.getPlayer(session));
 						
 					}
-					//System.out.println(questionJSON);
 					broadcast(questionJSON);
 					
 					break;
