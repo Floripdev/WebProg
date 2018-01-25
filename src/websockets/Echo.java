@@ -50,26 +50,29 @@ public class Echo{
 	private static final int ERRORMSG_TYPE = 255;
 	
 	//DEFINES ERROR-SUBTYPES
-	private static final int MAX_PLAYER_ERROR = 0;
-	private static final int PLAYERNAME_ALREADY_EXISTS = 1;
+	private static final int PLAYER_ERROR = 0;
 	private static final int EMPTY_PLAYERNAME = 2;
 	private static final int GAMESTART_ERROR = 3;
 	private static final int CATALOG_ERROR = 4;
+	private static final int QUESTIONANSWERED_ERROR = 5;
 	private static final int UNKNOWN_TYPE = 255;
 	
 	
 	//Var declarations global in Function
-	private Quiz quiz = Quiz.getInstance();
-	private QuizError error = new QuizError();
+	private static Quiz quiz = Quiz.getInstance();
+	private static QuizError error = new QuizError();
 	private Thread bcThread = new broadcastThread();
 	
 	
 	@OnError
 	public void error(Session session, Throwable t) {
 		System.out.println("Error Opening WebSocket: " + t);
+		ConnectionManager.SessionRemove(session);
+		ConnectionManager.preSessionRemove(session);
 		
 	}
 	
+	//Wenn WebSocket geöffnet wird session der PreList hinzufügen
 	@OnOpen
 	public void open(Session session, EndpointConfig conf){
 		ConnectionManager.addPreSession(session);
@@ -77,6 +80,10 @@ public class Echo{
 		
 	}
 	
+	/*
+	 * Wird ausgeführt wenn der Client geschlossen wird
+	 * 
+	 */
 	@OnClose
 	public void close(Session session, CloseReason reason) {
 		System.out.println("Closing Session with SessionID: " + session.getId());
@@ -85,6 +92,14 @@ public class Echo{
 		
 	}
 	
+	/*
+	 * Funktion OnMessage zum Empfangen von JSON-Strings vom Client
+	 * 
+	 * @param session Web-Socket von dem die Nachricht kommt 
+	 * @param msg Nachricht vom Client
+	 * @param last
+	 * 
+	 */
 	@SuppressWarnings({ "unchecked" })
 	@OnMessage
 	public void echoTextMessage(Session session, String msg, boolean last) throws ParseException{
@@ -94,25 +109,24 @@ public class Echo{
 		
 		if(session.isOpen()) {
 			switch(msgType) {
-				case RECV_LOGINREQUEST_TYPE:
+				//Verarbeitung eines Login Requests
+				case RECV_LOGINREQUEST_TYPE: 
 					System.out.println("LoginRequest recived from Client with SessionID:" + session.getId());
 					String name = msgJSON.get("name").toString();
-						
+					
+					//Ist userName leer?
 					if(name != null && name.length() > 0) {
 						Player player = quiz.createPlayer(name, error);
 								
 						if(player == null) {
-							if(error.getType() == QuizErrorType.TOO_MANY_PLAYERS){
-								sendError(session, MAX_PLAYER_ERROR, error.getDescription(), error.getDescription().length());
+							if(error.isSet()){
+								sendError(session, PLAYER_ERROR, error.getDescription(), error.getDescription().length());
 								break;
 									
-							}
-							if(error.getType() == QuizErrorType.USERNAME_TAKEN) {
-								sendError(session, PLAYERNAME_ALREADY_EXISTS, error.getDescription(), error.getDescription().length());
-								break;
-								
-							}								
+							}							
 						}
+						
+						//startet den BroadcastThread um alle User über login zu benachrichtigen
 						if(!bcThread.isAlive()) {
 							bcThread = new broadcastThread();
 							bcThread.start();
@@ -121,8 +135,10 @@ public class Echo{
 							
 							
 						
-						ConnectionManager.addSession(session, player);
-						ConnectionManager.preSessionRemove(session);
+						ConnectionManager.addSession(session, player); //Player in die "Richtige"-Liste eintragen
+						ConnectionManager.preSessionRemove(session); // Session aus Temporärer Liste entfernen
+						
+						//Falls der User superUser ist wird eine SuperUserMessage gesendet
 						if(player.isSuperuser()) {
 							JSONObject superUser = new JSONObject();
 							superUser.put("type", SEND_ISSUPERUSER_TYPE);
@@ -133,9 +149,6 @@ public class Echo{
 						JSONObject logRequest = new JSONObject();
 						logRequest.put("type", SEND_LOGINREQUEST_TYPE);
 						sendJSON(session, logRequest);
-						/*
-						JSONObject playerList = new JSONObject();
-						playerList.put("type", SEND_PLAYERLIST);*/
 						
 					}else {
 						sendError(session, EMPTY_PLAYERNAME, error.getDescription(), error.getDescription().length());
@@ -145,14 +158,15 @@ public class Echo{
 					break;
 					
 				case RECV_CATALOGCHANGE_TYPE:
-					//Überprüfen ob angemeldet mit javascript nur admin kann diese funktion aufrufen und diesen Reqzest senden
 					System.out.println("CatalogChange recieved from Client with SessionId: " + session.getId());
+					//Katalog aus der Nachricht setzen, meldet einen Error wenn der User kein SuperUser ist
 					quiz.changeCatalog(ConnectionManager.getPlayer(session), msgJSON.get("catalogName").toString(), error);
 					if(error.isSet()) {
 						sendError(session, CATALOG_ERROR, error.getDescription(), error.getDescription().length());
 						break;
 						
 					}
+					//changeCatalog erfolgreich -> JSONObject mit aktuellem Katalog zusammenbauen und an alle User per broadcast senden 
 					JSONObject  katalogChangeJSON = new JSONObject();
 					katalogChangeJSON.put("type", SEND_CATALOGCHANGE_TYPE);
 					katalogChangeJSON.put("data", quiz.getCurrentCatalog().getName());
@@ -160,6 +174,7 @@ public class Echo{
 					broadcast(katalogChangeJSON);				
 					break;
 					
+					//Verarbeitung eines GameStarts
 				case  RECV_GAMESTARTED_TYPE:
 					System.out.println("StartGame Recived from Client with SessionID: " + session.getId());
 					if(quiz.startGame(ConnectionManager.getPlayer(session), error)) {
@@ -175,10 +190,14 @@ public class Echo{
 					}
 					break;
 					
+					//Verarbeitung eines Question Requests
 				case RECV_QUESTIONREQUEST_TYPE:
+					//Timer starten
 					TimerTask timeoutTask = new TimerThread(session);
 					JSONObject questionJSON =new JSONObject();
 					JSONArray answer = new JSONArray();
+					
+					//Frage für aktuellen Spieler holen
 					Question currentQuestion = quiz.requestQuestion(ConnectionManager.getPlayer(session), timeoutTask, error);
 					if(error.isSet()) 
 					{	
@@ -187,6 +206,7 @@ public class Echo{
 						break;
 						
 					}
+					//Wenn Question vorhanden JSONObject zusammenbauen und versenden
 					if(currentQuestion != null) {
 						questionJSON.put("type", SEND_QUESTIONREQUEST_TYPE);
 						questionJSON.put("question", currentQuestion.getQuestion());
@@ -199,7 +219,7 @@ public class Echo{
 						questionJSON.put("timeout", currentQuestion.getTimeout());
 						
 					}
-					else 
+					else //Client auf setDone setzen und über letzte Frage informieren
 					{
 						System.out.println("Question empty -> Player = setDone");
 						ConnectionManager.countGameOver();
@@ -216,10 +236,19 @@ public class Echo{
 					
 					break;
 					
-			
-					 case RECV_QUESTIONANSWERED_TYPE:
+					//Verarbeitet beantwortete Fragen vom Client
+				case RECV_QUESTIONANSWERED_TYPE:
+						//Frage mit index der Funktion übergeben
 						Long index = Long.parseLong((String) msgJSON.get("selection").toString());
 						Long correctAnswer = quiz.answerQuestion(ConnectionManager.getPlayer(session), index, error);
+						if(error.isSet()) 
+						{	
+							System.out.println(error.getDescription());
+							sendError(session, QUESTIONANSWERED_ERROR, error.getDescription(), error.getDescription().length());
+							break;
+							
+						}
+						//Falls kein Timeout(-1) --> Richtige Antwort an Client schicken
 						if(correctAnswer != -1) {
 							JSONObject questResult = new JSONObject();
 							questResult.put("type", SEND_QUESTIONANSWERED_TYPE);
@@ -227,16 +256,22 @@ public class Echo{
 							sendJSON(session, questResult);
 						}
 					break;
-					
+				
+					//Verarbeitet Error_Messages vom Client
 				case ERRORMSG_TYPE:
 					System.out.println("Error from Client with SessionID: " + session.getId() + " print Message: " + msg);
 					break;
 					
+					//Verarbeitet eine neue Initalisierung des Spieles -- unvolständing
 				case RECV_RESTARTGAME_TYPE:
 					System.out.println("Restart Button gedrückt");
+					ConnectionManager.restartGame();
+					removePlayers();
+					
 					break;
 					
-				default: 
+					//Default --> Hier landen alle types die nicht zugeordnet werden können
+				default: 	
 					String errorMsg = new String("UNKNOWN_TYPE: ");
 					errorMsg += msgType;
 					sendError(session, UNKNOWN_TYPE, errorMsg, errorMsg.length());
@@ -250,9 +285,17 @@ public class Echo{
 		
 
 	
-	//Baut die Errors zusammen und sendet sie ab
+	/*
+	 * Baut die Errors zusammen und sendet sie ab
+	 * 
+	 * @param session Websocket an welchen gesendet werden soll
+	 * @param subtype Sub-Type des Errors
+	 * @param message Die Fehler Beschrreibung
+	 * @param length länge der Nachricht
+	 * 
+	 */
 	@SuppressWarnings("unchecked")
-	public void sendError(Session session, int subtype, String message, int length) {
+	public static void sendError(Session session, int subtype, String message, int length) {
 		System.out.println("Creating ErrorMSG: " + message);
 		JSONObject error = new JSONObject();
 		error.put("type", ERRORMSG_TYPE);
@@ -263,7 +306,15 @@ public class Echo{
 		
 	}
 	
-	//Sendet JSONObject an den Client
+	/*
+	 * Sendet JSONObject an den Client
+	 * 
+	 * @param session WebSocket an welchen gesendet werden soll
+	 * @param obj zu sendender JSON-String
+	 * 
+	 * @throws IOException wirf einen Fehler falls das versenden schief geht
+	 * 
+	 */
 	public static synchronized void sendJSON(Session session, JSONObject obj) {
 		System.out.println("Sending JSONObject to Client...");
 		try {
@@ -275,7 +326,12 @@ public class Echo{
 		}
 		
 	}
-	
+	/*
+	 * Funktion sendet einen Broadcast Message an alle User
+	 * 
+	 * @param objJSON Der zu versendende JSON-String
+	 * 
+	 */
 	public static void broadcast(JSONObject objJSON){
 		Set<Session> sessionMap = ConnectionManager.getSessions();
 		for(Iterator<Session> iter = sessionMap.iterator(); iter.hasNext();){
@@ -292,7 +348,28 @@ public class Echo{
 			}
 			
 		}
-	}
+	}		
 	
+	/*
+	 * Funktion zum löschen der Spieler aus der Spielerliste
+	 * 
+	 * 
+	 * 
+	 */
+	public static synchronized void removePlayers() {
+		Set<Session> sessionMap = ConnectionManager.getSessions();
+		for(Iterator<Session> i = sessionMap.iterator(); i.hasNext();) {
+			Session s = i.next();
+			System.out.println("Player: " + ConnectionManager.getPlayer(s).getName() + " deleted");
+			quiz.removePlayer(ConnectionManager.getPlayer(s), error);
+			if(error.isSet()) {
+				sendError(s, CATALOG_ERROR, error.getDescription(), error.getDescription().length());
+				break;
+				
+			}
+			
+		}
+		
+	}
 	
 }

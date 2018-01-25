@@ -44,6 +44,7 @@ public class TimerThread extends TimerTask {
 			}
 			
 		}else {
+			//Timeout erreicht und senden
 			JSONObject timeout = new JSONObject();
 			timeout.put("type", SEND_QUESTIONANSWERED_TYPE);
 			timeout.put("correct", "-1");

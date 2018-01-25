@@ -62,6 +62,7 @@ public class ConnectionManager
     	
     }
     
+    //Entfernt eine Session aus der PreList
     public static synchronized boolean preSessionRemove(Session session){
     	if(mapPreSession.remove(session)){
     		return true;
@@ -73,24 +74,34 @@ public class ConnectionManager
     	
     }
     
+    //Gibt die Anzahl an Sessions in der PreListe zurück
     public static synchronized List<Session> getPreSessions(){
     	return mapPreSession;
     	
     }
     
+    //Gibt die Anzahl an Sessions in der Session Liste zurück
     public static synchronized int getSessionCount() { 
         return mapSessionPlayer.size();
    
     }
     
+    //zählt die Variable GameOver hoch
     public static synchronized int countGameOver() {
     	gameOver += 1;
     	return gameOver;
     	
     }
     
+    //gibt den Wert von GameOver zurück
     public static synchronized int getGameOver() {
     	return gameOver;
+    	
+    }
+    
+    //Setzt die gameOver Variable wieder auf 0
+    public static synchronized void restartGame() {
+    	gameOver = 0;
     	
     }
     

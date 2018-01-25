@@ -29,6 +29,7 @@ public class broadcastThread extends Thread{
 	public void run(){
 		System.out.println("~ BroadcastThread ~");
 		System.out.println("~ SessionCount: " + ConnectionManager.getSessionCount());
+		//SpielerListe erstellen
 		if(ConnectionManager.getSessionCount() > 0){
 			JSONObject playerList = new JSONObject();
 			playerList.put("type", SEND_PLAYERLIST);
@@ -45,6 +46,7 @@ public class broadcastThread extends Thread{
 				
 			}
 			
+			//SpielerListe sortieren nach Rang
 			Arrays.sort(spieler, new Comparator<String[]>(){
 				@Override
 				public int compare(final String[] entry1, final String[] entry2){
@@ -59,6 +61,7 @@ public class broadcastThread extends Thread{
 				
 			});
 			
+			//Spieler-Daten in das objArray einfügen
 			for(int i = 0; i < spieler.length; i++){
 				JSONObject obj = new JSONObject();
 				obj.put("name", spieler[i][0]);
@@ -78,6 +81,7 @@ public class broadcastThread extends Thread{
 				gameOver.put("name", spieler[ConnectionManager.getSessionCount()-1][0]);
 				gameOver.put("score", spieler[ConnectionManager.getSessionCount()-1][1]);
 				
+				
 				Set<Session> sList =ConnectionManager.getSessions();
 				for(Iterator<Session> iter = sList.iterator(); iter.hasNext();) {
 					Session s = iter.next();
@@ -87,6 +91,7 @@ public class broadcastThread extends Thread{
 				}
 				
 			}
+			//playerList an alle Clients senden
 			Echo.broadcast(playerList);	
 				
 			

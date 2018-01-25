@@ -1,19 +1,16 @@
 var text="Webquiz                                                                    ";
 var begin = 0;
 var end = text.length;
-var playerCnt = 0;
-var startButton = false;
 
 
 window.addEventListener("load", lauftext);
 document.addEventListener("DOMContentLoaded", init); //Ruft die Init Funktion auf, sobald der DOMContent geladen ist
 
 
-//Initialisiert die EventListener für die Buttons und die Kataloge beim Start der Website
+//Initialisiert die Websockets und lädt die Kataloge
 function init(){
-    //document.getElementById("button_login").addEventListener('click', getPlayerName);
 	window.addEventListener("load", loadCatalogs);
-    window.addEventListener("load", initLogin);
+    window.addEventListener("load", initLogin); //WebSockets beim load initalisieren
     
 }
 
@@ -30,53 +27,7 @@ function lauftext(){
     
 }
 
-//Nimmt sich den Namen aus dem Login Fenster und übergibt ihn einer Anderen Funktion sind mehr als 2 Spieler angemeldet wird ein Start Button in das Dokument geladen
-function getPlayerName(){
-    var name = document.getElementById("usrname_txt");
-    console.log(name.value);
-    if(playerCnt >= 4){
-        alert("Zu viele Spieler");
-    } else if(name.value === ""){
-              alert("Bitte geben Sie einen Namen ein!");
-              
-              }else{
-                addChild(name);
-                  playerCnt++;
-       
-    }
-    //Code zum Laden des Start Buttons in das Dokument
-    if(playerCnt >= 2 && !startButton){
-        var myInput = document.createElement('input');
-        
-        //Input Element mit Werten für den StartButton füllen
-        myInput.value = 'Start Game';
-        myInput.type = 'button';
-        myInput.id = 'start_button'
-        var ausgabe = document.getElementById('login_form');
-        ausgabe.appendChild(myInput);
-        startButton = true;
-        document.getElementById("start_button").addEventListener('click', startButtonPressed);
-        
-        
-    }
-    
-}
-
-//Name in das Highscore Area einfügen
-function addChild(n){
-    var myInput = document.createElement('input');
-    var myPar = document.createElement('p');
-    
-    //Input Wert aus n.value übergeben (Name des Spielers)
-    myInput.value = n.value;
-    
-    var ausgabe = document.getElementById('scorefr');
-    ausgabe.appendChild(myInput);
-    ausgabe.appendChild(myPar);
-    
-}
-
-//Funktion um den ausgewählten Katalog farblich zu hinterlegen
+//Funktion um den ausgewählten Katalog farblich zu hinterlegen (only SuperUser)
 function catalogSelected(elem){
     var allCatalogs = document.getElementsByName('catalogs');
     for(var i=0; i < allCatalogs.length; i++){
@@ -84,14 +35,13 @@ function catalogSelected(elem){
         allCatalogs[i].style.color = 'black';
         
     }
-   elem.target.style.backgroundColor ='darkturquoise';
+    elem.target.style.backgroundColor ='darkturquoise';
     elem.target.style.color = 'white';
-    //TODO: überarbeiten weil sonst dauerschleife --> evtl in der Echo Java über isAdmin funktion
-    	sendCatalogChange(elem.target.innerText);
-    
-    
+    sendCatalogChange(elem.target.innerText); //Aktuellen Katalog in die RFC senden und Server übergeben
+        
 }
 
+//Für die einfärbung der Kataloge für die Clients die nicht superUser sind
 function catalogSelected2(elem){
     var allCatalogs = document.getElementsByName('catalogs');
     for(var i=0; i < allCatalogs.length; i++){
@@ -99,21 +49,12 @@ function catalogSelected2(elem){
         allCatalogs[i].style.color = 'black';
         
     }
-   elem.style.backgroundColor ='darkturquoise';
+    elem.style.backgroundColor ='darkturquoise';
     elem.style.color = 'white';
 	
 }
 
-//Überprüft ob der Start Button gedrückt wurde und fügt 4 Radio Elemente hinzu
-function startButtonPressed(){
-    var ausgabe = document.getElementById('login_form');
-    for(var i = 1; i < 5; i++ ){
-        createRadio(i, ausgabe); //Aufrufen der Funktion um Radio Buttons in die Website zu laden.
-        
-    }
-    
-}
-
+//Radio Button mit der dazugehörigen Antwort erstellen und einfügen
 function createRadio(answer,cnt)
 {
 	var out = document.getElementById("questSektion");
@@ -147,6 +88,7 @@ function createRadio(answer,cnt)
     
 }
 
+//Erstellen der Frage und einfügen in die Website
 function createQuestion(questString)
 {		
 	var quest = document.createElement("h1");

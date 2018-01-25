@@ -17,7 +17,6 @@ import de.fhwgt.quiz.application.Quiz;
 import de.fhwgt.quiz.loader.FilesystemLoader;
 import de.fhwgt.quiz.loader.LoaderException;
 
-import org.json.simple.JSONObject;
 
 /**
  * Servlet implementation class catalogLoadServlet

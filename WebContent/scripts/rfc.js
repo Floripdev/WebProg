@@ -1,7 +1,6 @@
 var socketGlobal;
-var curSelection = -2;
 
-
+//Sendet einen LoginRequest an den Server über den Socket
 function sendLoginRequest(socket)
 {
 	var playerName = document.getElementById('usrname_txt').value;
@@ -17,6 +16,7 @@ function sendLoginRequest(socket)
 	
 }
 
+//Sendet einen QuestionRequest an den Server über den Socket
 function sendQuestionRequest(){
 	var msg ={
 			"type":"8",
@@ -27,6 +27,7 @@ function sendQuestionRequest(){
 	
 }
 
+//sendet einen CatalogChange  an den Server über den Socket
 function sendCatalogChange(catalogName){
     var msg = {
     		"type":"5",
@@ -37,6 +38,7 @@ function sendCatalogChange(catalogName){
 	
 }
 
+//Sendet eine Start game an den Server über den Socket
 function sendStartGame()
 {
 	var msg = 
@@ -47,6 +49,7 @@ function sendStartGame()
 	socketGlobal.send(JSON.stringify(msg));
 }
 
+//Sendet eine beantwortete Frage an den Server über den Socket
 function mouseClickListener(event) 
 {
  	
@@ -61,12 +64,14 @@ function mouseClickListener(event)
  	socketGlobal.send(JSON.stringify(msg));
 }
 
+//Sendet einen RestartGame Request an den Server über den Socket
 function restartGame(){
 	var msg = {
 			"type": "150"
 			
 	};
 	socketGlobal.send(JSON.stringify(msg));
+	
 	
 }
 
